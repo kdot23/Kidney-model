@@ -28,7 +28,7 @@ for i in range(T):
 #iMatches = model.addVars(range(T), range(T), vtype = GRB.BINARY, name = "IMatches")
 
 #compatible pair can only match with up to one incompatible pair or themselves
-model.addConstrs((quicksum(ciMatches[i,j] for j in range(-1,T) if (i,j) in ciMatches)  == 1 for i in range(T)), "Compat to Incompat Matches")
+model.addConstrs((quicksum(ciMatches[i,j] for j in range(-1,T) if (i,j) in ciMatches)  <= 1 for i in range(T)), "Compat  Matches")
 #incompatible pair can only match with up to one incompatible pair or one compatible pair
 model.addConstrs((quicksum(iMatches[i,j] for j in range(T) if (i,j) in iMatches) + quicksum(ciMatches[j,i] for j in range(T) if (j,i) in ciMatches) <= 1 for i in range(T)), "Incompat Matches")
 

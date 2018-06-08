@@ -14,21 +14,34 @@ model = Model('Dual Kidney Optimizer')
 alpha = {}
 beta = {}
 gamma = {}
+delta = {}
+theta = {}
 for i in range(T):
     alpha[i] = model.addVar(vtype=GRB.CONTINUOUS, name="alpha"+str(i))
 for i in range(T):
-    if sum(Igraph[i]) or sum(1 for j in range(T) if CIgraph[j][i] and incompat[i][2]>compat[j][2]) > 0:
-        beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name="beta"+str(i))
+    for j in range(T):
+        if (Igraph[i][j] and Igraph[j][i]) or (CIgraph[j][i] and incompat[i][2] > compat[j][2]):
+    #if sum(Igraph[i]) or sum(1 for j in range(T) if CIgraph[j][i] and incompat[i][2]>compat[j][2]) > 0:
+            beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name="beta"+str(i))
+            break
 for i in range(T):
     for j in range(T):
         if Igraph[i][j] and Igraph[j][i]:
             gamma[(i,j)] =  model.addVar(vtype=GRB.CONTINUOUS, name="gamma"+str(i) + ", " + str(j))
+            delta[(i,j)] = model.addVar(vtype=GRB.CONTINUOUS, lb = 0, name="delta"+str(i) + ", " + str(j))
+for i in range(T):
+    for j in range(T):
+        if CIgraph[i][j] and incompat[j][2] > compat[i][2]:
+            theta[(i,j)] = model.addVar(vtype=GRB.CONTINUOUS, lb = 0, name="theta"+str(i) + ", " + str(j))
+    theta[(i,-1)] = model.addVar(vtype=GRB.CONTINUOUS, lb = 0, name="theta"+str(i) + ", " + str(j))
+            
 
-model.addConstrs((alpha[i]+beta[j]-compat[i][2]-incompat[j][2] >= 0 for i in alpha for j in beta), name = "something???")
-model.addConstrs((alpha[i]-compat[i][2] >= 0 for i in alpha), name = "something2")
-model.addConstrs((beta[v[0]] + gamma[v] - gamma[(v[1],v[0])] - incompat[v[0]][2] >= 0 for v in gamma ), name = "something3")
 
-obj = quicksum(alpha[i] for i in alpha) + quicksum(beta[i] for i in beta)
+model.addConstrs((alpha[i] + beta[j] + theta[(i,j)] - compat[i][2] - incompat[j][2] >= 0 for i in alpha for j in beta if (i,j) in theta), name = "something???")
+model.addConstrs((alpha[i] + theta[(i,-1)] - compat[i][2] >= 0 for i in alpha), name = "something2")
+model.addConstrs((beta[v[0]] + gamma[v] - gamma[(v[1],v[0])] + delta[v] - incompat[v[0]][2] >= 0 for v in gamma ), name = "something3")
+
+obj = quicksum(alpha[i] for i in alpha) + quicksum(beta[i] for i in beta) +quicksum(delta[v] for v in delta) + quicksum(theta[v] for v in theta)
 model.setObjective(obj, GRB.MINIMIZE)
 model.optimize()
 
