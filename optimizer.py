@@ -1,7 +1,20 @@
+
 import json
 from gurobipy import *
+import argparse
 
-with open("data.json",'r') as f:
+parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file")
+parser.add_argument('-i','--inputFile', nargs='?', default="data.json", help="JSON File to be used")
+parser.add_argument('-o', '--outputFile', nargs = '?', help = "CSV File for results to be saved to")
+parser.add_argument('--quality', action='store_true', help = "Optimize for quality")
+parser.add_argument('--count', action='store_true', help = "Optimize for count")
+parser.add_argument('-a','--all', action='store_true', help = "Perform all optimizations")
+
+args=parser.parse_args()
+args.count = args.count or args.all
+args.quality = not args.count or args.quality or args.all
+
+with open(args.inputFile,'r') as f:
     data = json.load(f)
 compat = data[0]
 incompat = data[1]
@@ -49,31 +62,38 @@ model.addConstrs((iMatches[i,j] == iMatches[j,i] for i in range(T) for j in rang
 #obj = quicksum(ciMatches[i,j] for i in range(T) for j in range(T) if (i,j) in ciMatches) + quicksum(ciMatches[i,-1] for i in range(T) ) + quicksum(iMatches[i,j] for i in range(T) for j in range(T) if (i,j) in iMatches)
 obj = quicksum((compat[i][2]+incompat[j][2])*ciMatches[i,j] for i in range(T) for j in range(T) if (i,j) in ciMatches) + quicksum(compat[i][2]*ciMatches[i,-1] for i in range(T) ) + quicksum(incompat[i][2]*iMatches[i,j] for i in range(T) for j in range(T) if (i,j) in iMatches)
 model.setObjective(obj, GRB.MAXIMIZE) 
-
+results = ''
 model.optimize()
-count = 0
+num_matches = 0
+quality = 0.
+num_II = 0
+num_CI = 0
+num_C = 0
 for v in model.getVars():
     if v.X != 0:
         print str(v.Varname) + ' ' + str(v.X)
-        count+=1
-print count
-util = 0.
-count2 = 0
-count3 = 0
-count4 = 0
+        num_matches += 1
+
 for var in iMatches:
     if (iMatches[var].X != 0):
-        util += incompat[var[0]][2]
-        count4 += 1
+        quality += incompat[var[0]][2]
+        num_II += 1
 for var in ciMatches:
     if (ciMatches[var].X != 0):
-        util += compat[var[0]][2]+incompat[var[1]][2]
-        count3+=1
-        if var[1] != -1:
-            count2+=1
-            count4+=1
-        
-print util
-print float(count2)/count3
-print float(count4)
-print(obj.getValue())
+        if var[1] == -1:
+            num_C += 1
+            quality += compat[var[0]][2]
+        else:
+            num_CI += 1
+            quality += compat[var[0]][2] + incompat[var[1]][2]
+print num_matches
+print num_II
+print num_CI
+print num_C
+print quality
+
+if args.outputFile:
+    with open(args.outputFile, 'w') as f:
+        f.write(results)
+else:
+    print results
