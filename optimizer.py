@@ -19,6 +19,7 @@ if args.inputFile:
 else:
     data = []
     for fn in os.listdir(args.inputDir):
+        if fn == '.DS_Store': continue
         with open(args.inputDir+'/'+fn, 'r') as f:
             data.append(json.load(f))
 
