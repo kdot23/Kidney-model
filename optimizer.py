@@ -66,6 +66,9 @@ results = ''
 model.optimize()
 num_matches = 0
 quality = 0.
+c_quality = 0.
+ci_quality = 0.
+ii_quality = 0.
 num_II = 0
 num_CI = 0
 num_C = 0
@@ -76,21 +79,27 @@ for v in model.getVars():
 
 for var in iMatches:
     if (iMatches[var].X != 0):
-        quality += incompat[var[0]][2]
+        ii_quality += incompat[var[0]][2]
         num_II += 1
 for var in ciMatches:
     if (ciMatches[var].X != 0):
         if var[1] == -1:
             num_C += 1
-            quality += compat[var[0]][2]
+            c_quality += compat[var[0]][2]
         else:
             num_CI += 1
-            quality += compat[var[0]][2] + incompat[var[1]][2]
+            ci_quality += compat[var[0]][2] + incompat[var[1]][2]
+
 print num_matches
-print num_II
-print num_CI
 print num_C
+print num_CI
+print num_II
+
+quality = c_quality + ci_quality + ii_quality
 print quality
+print c_quality/num_C
+print ci_quality/num_CI
+print ii_quality/num_II
 
 if args.outputFile:
     with open(args.outputFile, 'w') as f:
