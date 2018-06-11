@@ -10,12 +10,8 @@ parser.add_argument('--inputFile', nargs='?', help="JSON File to be used")
 parser.add_argument('-i', '--inputDir', nargs='?', default='data', help='input directory to look for data files')
 parser.add_argument('-o', '--outputFile', nargs='?', help="CSV File for results to be saved to")
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
-parser.add_argument('--count', action='store_true', help="Optimize for count")
-parser.add_argument('-a', '--all', action='store_true', help="Perform all optimizations")
 
 args=parser.parse_args()
-args.count = args.count or args.all
-args.quality = not args.count or args.quality or args.all
 results = "#nm\tnum_C\tnum_CI\tnum_II\tq\tc_q\tci_q\tii_q\n"
 if args.inputFile:
     with open(args.inputFile,'r') as f:
@@ -71,8 +67,10 @@ for d in data:
     #substitute this line for line 24 to allow for arbitrary length cycles in incompatible pool
     #model.addConstrs((quicksum(iMatches[i,j] for j in range(T) if (i,j) in iMatches) == quicksum(iMatches[j,i] for j in range(T)) for i in range(T)), "Give one to get one")
     
-    #obj = quicksum(ciMatches[i,j] for i in range(T) for j in range(T) if (i,j) in ciMatches) + quicksum(ciMatches[i,-1] for i in range(T) ) + quicksum(iMatches[i,j] for i in range(T) for j in range(T) if (i,j) in iMatches)
-    obj = quicksum((compat[i][2]+incompat[j][2])*ciMatches[i,j] for i in range(T) for j in range(T) if (i,j) in ciMatches) + quicksum(compat[i][2]*ciMatches[i,-1] for i in range(T) ) + quicksum(incompat[i][2]*iMatches[i,j] for i in range(T) for j in range(T) if (i,j) in iMatches)
+    if (args.quality):
+        obj = quicksum((compat[i][2]+incompat[j][2])*ciMatches[i,j] for i in range(T) for j in range(T) if (i,j) in ciMatches) + quicksum(compat[i][2]*ciMatches[i,-1] for i in range(T) ) + quicksum(incompat[i][2]*iMatches[i,j] for i in range(T) for j in range(T) if (i,j) in iMatches)
+    else:
+        obj = quicksum(ciMatches[i,j] for i in range(T) for j in range(T) if (i,j) in ciMatches) + quicksum(ciMatches[i,-1] for i in range(T) ) + quicksum(iMatches[i,j] for i in range(T) for j in range(T) if (i,j) in iMatches)
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
     num_matches = 0
