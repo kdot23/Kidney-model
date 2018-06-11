@@ -23,10 +23,6 @@ else:
     for fn in os.listdir(args.inputDir):
         with open(args.inputDir+'/'+fn, 'r') as f:
             data.append(json.load(f))
-f = None
-if args.outputFile:
-    f = open(args.outputFile, 'w')
-
 for d in data:
     compat = d[0]
     incompat = d[1]
@@ -113,9 +109,8 @@ for d in data:
     print ci_quality/num_CI
     print ii_quality/num_II
     
-    if args.outputFile:
+if args.outputFile:
+    with open(args.outputFile,'w') as f:
         f.write(results)
-    else:
-        print results
-if f:
-    f.close()
+else:
+    print results
