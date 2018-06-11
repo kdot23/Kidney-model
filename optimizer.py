@@ -1,5 +1,5 @@
 #inport modules
-import statistics
+import numpy as np
 import os
 import json
 from gurobipy import *
@@ -26,7 +26,6 @@ else:
         with open(args.inputDir+'/'+fn, 'r') as f:
             data.append(json.load(f))
 
-results = ''
 pastData = []
 for d in data:
     compat = d[0]
@@ -86,7 +85,7 @@ for d in data:
     num_C = 0
     for v in model.getVars():
         if v.X != 0:
-            print str(v.Varname) + ' ' + str(v.X)
+            #print str(v.Varname) + ' ' + str(v.X)
             num_matches += 1
     
     for var in iMatches:
@@ -129,6 +128,22 @@ for d in data:
     else:
         results += "na"
     results += "\n"
+    pastData.append((num_matches,num_C, num_CI, num_II, quality, 
+        c_quality/num_C if num_C else 0, ci_quality/num_CI if num_CI else 0, ii_quality/num_II if num_II else 0))
+
+avgs = np.mean(pastData, axis=0)
+stdevs = np.std(pastData, axis=0)
+
+s = ''
+for std in stdevs:
+    s += str(std)+"\t"
+s += "\n"
+results = s+"\n\n\n"+results
+s = ''
+for a in avgs:
+    s += str(a)+"\t"
+s+="\n"
+results = s+results
     
 if args.outputFile:
     with open(args.outputFile,'w') as f:

@@ -25,7 +25,6 @@ for i in range(T):
         r = 0
     q = random.expovariate(1./mean)
     compat.append((d,r,q))
-print compat
 
 #generate list of incompatible pairs  
 incompat = []        
@@ -40,7 +39,6 @@ for i in range(T):
         r = 0
     q = random.expovariate(1./mean)
     incompat.append((d,r,q))
-print incompat
 
 #create matrix with 1 representing an edge between the incompatible pairs
 Igraph = []
@@ -59,7 +57,6 @@ for i in range(T):
             Igraph[i].append(int(p < .02))
         if incompat[i][0] and incompat[j][1]:
             Igraph[i].append(int(p < .01))
-print Igraph
 
 #create matrix with 1 representing an edge between compatible and incompatible pair
 CIgraph = []
@@ -89,7 +86,6 @@ for i in range(T):
             v2 = int(p2 < .01)
         CIgraph[i].append(v1&v2)
             
-print CIgraph
 
 with open(args.outputFile, 'w') as f:
     f.write(json.dumps((compat, incompat, Igraph, CIgraph)))
