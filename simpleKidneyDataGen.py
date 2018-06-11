@@ -7,6 +7,8 @@ parser = argparse.ArgumentParser(description="Generates data for compatible and 
 parser.add_argument('-o', '--outputFile', nargs = '?', default = "data.json", help = "JSON File for data to be saved to")
 parser.add_argument('-T', '--numAgents', nargs = '?', default = 100, help = "Number of agents", dest="T", type=int)
 parser.add_argument('-m', '--mean', nargs = '?', default = 20, help = "Mean quality", dest="mean", type=int)
+parser.add_argument('-e', '--edgePercentages', nargs = 4, default = [.04,.03,.02,.01], help = "Likelihood of two nodes being joined by an edge", type = float)
+
 args = parser.parse_args()
 
 T = args.T
@@ -50,13 +52,13 @@ for i in range(T):
             continue
         p = random.random()
         if not incompat[i][0] and not incompat[j][1]:
-            Igraph[i].append(int(p < .04))
+            Igraph[i].append(int(p < args.edgePercentages[0]))
         if not incompat[i][0] and incompat[j][1]:
-            Igraph[i].append(int(p < .03))
+            Igraph[i].append(int(p < args.edgePercentages[1]))
         if incompat[i][0] and not incompat[j][1]:
-            Igraph[i].append(int(p < .02))
+            Igraph[i].append(int(p < args.edgePercentages[2]))
         if incompat[i][0] and incompat[j][1]:
-            Igraph[i].append(int(p < .01))
+            Igraph[i].append(int(p < args.edgePercentages[3]))
 
 #create matrix with 1 representing an edge between compatible and incompatible pair
 CIgraph = []
