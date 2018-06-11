@@ -15,6 +15,7 @@ parser.add_argument('-a', '--all', action='store_true', help="Perform all optimi
 args=parser.parse_args()
 args.count = args.count or args.all
 args.quality = not args.count or args.quality or args.all
+results = "#nm\tnum_C\tnum_CI\tnum_II\tq\tc_q\tci_q\tii_q\n"
 if args.inputFile:
     with open(args.inputFile,'r') as f:
         data = [json.load(f)]
@@ -70,7 +71,6 @@ for d in data:
     #obj = quicksum(ciMatches[i,j] for i in range(T) for j in range(T) if (i,j) in ciMatches) + quicksum(ciMatches[i,-1] for i in range(T) ) + quicksum(iMatches[i,j] for i in range(T) for j in range(T) if (i,j) in iMatches)
     obj = quicksum((compat[i][2]+incompat[j][2])*ciMatches[i,j] for i in range(T) for j in range(T) if (i,j) in ciMatches) + quicksum(compat[i][2]*ciMatches[i,-1] for i in range(T) ) + quicksum(incompat[i][2]*iMatches[i,j] for i in range(T) for j in range(T) if (i,j) in iMatches)
     model.setObjective(obj, GRB.MAXIMIZE) 
-    results = ''
     model.optimize()
     num_matches = 0
     quality = 0.
@@ -105,10 +105,26 @@ for d in data:
     
     quality = c_quality + ci_quality + ii_quality
     print quality
-    print c_quality/num_C
-    print ci_quality/num_CI
-    print ii_quality/num_II
-    results += str(num_matches) + "\t" + str(num_C) + "\t" + str(num_CI) + "\t" + str(num_II) + "\t" + str(quality) + "\t" + str(c_quality/num_C) + "\t" + str(ci_quality/num_CI) + "\t" + str(ii_quality/num_II) + "\n"
+    if num_C > 0:
+        print c_quality/num_C
+    if num_CI > 0:
+        print ci_quality/num_CI
+    if (num_II > 0):
+        print ii_quality/num_II
+    results += str(num_matches) + "\t" + str(num_C) + "\t" + str(num_CI) + "\t" + str(num_II) + "\t" + str(quality) + "\t" 
+    if num_C > 0:
+        results += str(c_quality/num_C) + "\t" 
+    else:
+        results += "na\t"
+    if num_CI > 0:
+        results += str(ci_quality/num_CI) + "\t"
+    else:
+        results += "na\t"
+    if (num_II > 0):
+        results += str(ii_quality/num_II)
+    else:
+        results += "na"
+    results += "\n"
     
 if args.outputFile:
     with open(args.outputFile,'w') as f:
