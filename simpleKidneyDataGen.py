@@ -1,8 +1,16 @@
 #generate data that can be used to create 2 cycle loops (or infinite size loops or incompatible pairs)
 import random
 import json
+import argparse
 
-T = 300
+parser = argparse.ArgumentParser(description="Generates data for compatible and incompatible kidney exchange pairs")
+parser.add_argument('-o', '--outputFile', nargs = '?', default = "data.json", help = "JSON File for data to be saved to")
+parser.add_argument('-T', '--numAgents', nargs = '?', default = 100, help = "Number of agents", dest="T", type=int)
+parser.add_argument('-m', '--mean', nargs = '?', default = 20, help = "Mean quality", dest="mean", type=int)
+args = parser.parse_args()
+
+T = args.T
+mean = args.mean
 #generate list of compatible pairs
 compat = []
 #d=0 is more compatible and d=1 is less compatible, r=0 is easy to match, r=1 hard to match
@@ -15,7 +23,7 @@ for i in range(T):
         r = 1
     else:
         r = 0
-    q = random.expovariate(.2)
+    q = random.expovariate(1./mean)
     compat.append((d,r,q))
 print compat
 
@@ -30,7 +38,7 @@ for i in range(T):
         r = 1
     else:
         r = 0
-    q = random.expovariate(.2)
+    q = random.expovariate(1./mean)
     incompat.append((d,r,q))
 print incompat
 
@@ -83,5 +91,5 @@ for i in range(T):
             
 print CIgraph
 
-with open('data.json', 'w') as f:
+with open(args.outputFile, 'w') as f:
     f.write(json.dumps((compat, incompat, Igraph, CIgraph)))
