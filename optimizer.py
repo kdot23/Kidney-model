@@ -90,17 +90,9 @@ for var in ciMatches:
             num_CI += 1
             ci_quality += compat[var[0]][2] + incompat[var[1]][2]
 
-print num_matches
-print num_C
-print num_CI
-print num_II
-
 quality = c_quality + ci_quality + ii_quality
-print quality
-print c_quality/num_C
-print ci_quality/num_CI
-print ii_quality/num_II
-
+results += str(num_matches) + "\t" + str(num_C) + "\t" + str(num_CI) + "\t" + str(num_II) + "\t" + str(quality) + "\t" + str(c_quality/num_C) + "\t" + str(ci_quality/num_CI) + "\t" + str(ii_quality/num_II) + "\n"
+print results
 if args.outputFile:
     with open(args.outputFile, 'w') as f:
         f.write(results)
