@@ -1,4 +1,5 @@
 #inport modules
+import statistics
 import os
 import json
 from gurobipy import *
@@ -23,6 +24,9 @@ else:
     for fn in os.listdir(args.inputDir):
         with open(args.inputDir+'/'+fn, 'r') as f:
             data.append(json.load(f))
+
+results = ''
+pastData = []
 for d in data:
     compat = d[0]
     incompat = d[1]
@@ -70,7 +74,6 @@ for d in data:
     #obj = quicksum(ciMatches[i,j] for i in range(T) for j in range(T) if (i,j) in ciMatches) + quicksum(ciMatches[i,-1] for i in range(T) ) + quicksum(iMatches[i,j] for i in range(T) for j in range(T) if (i,j) in iMatches)
     obj = quicksum((compat[i][2]+incompat[j][2])*ciMatches[i,j] for i in range(T) for j in range(T) if (i,j) in ciMatches) + quicksum(compat[i][2]*ciMatches[i,-1] for i in range(T) ) + quicksum(incompat[i][2]*iMatches[i,j] for i in range(T) for j in range(T) if (i,j) in iMatches)
     model.setObjective(obj, GRB.MAXIMIZE) 
-    results = ''
     model.optimize()
     num_matches = 0
     quality = 0.
