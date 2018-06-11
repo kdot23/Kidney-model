@@ -108,6 +108,7 @@ for d in data:
     print c_quality/num_C
     print ci_quality/num_CI
     print ii_quality/num_II
+    results += str(num_matches) + "\t" + str(num_C) + "\t" + str(num_CI) + "\t" + str(num_II) + "\t" + str(quality) + "\t" + str(c_quality/num_C) + "\t" + str(ci_quality/num_CI) + "\t" + str(ii_quality/num_II) + "\n"
     
 if args.outputFile:
     with open(args.outputFile,'w') as f:
