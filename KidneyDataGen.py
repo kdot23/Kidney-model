@@ -8,11 +8,15 @@ import util
 import json
 
 parser = argparse.ArgumentParser(description="Generates Donor recipient pairs and a quality pool for optimization")
-#parser.add_argument('-K', '')
+parser.add_argument('-K', '--num_incompatible', default=100, dest='K')
+parser.add_argument('-T', '--num_compatible', default=100, dest='T')
+parser.add_argument('-o', '--output', default='data.json')
 
-K = 10
-T = 10
-filename = 'data.json'
+args = parser.parse_args()
+
+K = args.K
+T = args.T
+filename = args.output
 pool = BJCSensitivityPool(T, K)
 gen = DistributionGenerator()
 matches = []
