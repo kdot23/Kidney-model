@@ -54,6 +54,10 @@ for d in data:
 model = Model('Kideny Optimizer')
 iMatches = {}
 ciMatches = {}
+iiLKDPI = {}
+ciLKDPI = {}
+icLKDPI = {}
+cLKDPI = {}
 #only create variables for edges which exist
 
 
@@ -67,6 +71,30 @@ for i in range(len(pool.incompatiblePairs)):
                         and (not pool.incompatiblePairs[j].saidman.isPositiveCrossmatch(pool.incompatiblePairs[i].patientCPRA))
             if compatible_1 and compatible_2:
                 iMatches[(i,j)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub = 1, name = "I" + str((i,j)))
+            
+            donor_rec_HLA_B_mis = gen.gen_donor_rec_HLA_B_mis(0)
+            donor_rec_HLA_DR_mis = gen.gen_donor_rec_HLA_DR_mis(0)
+            donor_rec_abo_comp_ij = functions.are_blood_compatible(pool.incompatiblePairs[i].bloodTypeDonor, pool.compatiblePairs[j].bloodTypePatient)
+            donor_rec_weight_ratio_ij = util.calculate_weight_ratio(pool.incompatiblePairs[i].donor_weight, pool.incompatiblePairs[j].rec_weight)   
+            LKDPI_ij = util.calculate_lkdpi(pool.incompatiblePairs[i].donor_age, pool.incompatiblePairs[i].donor_afam, 
+                                            pool.incompatiblePairs[i].donor_bmi, pool.incompatiblePairs[i].donor_cig_use,
+                                              pool.incompatiblePairs[i].donor_sex, pool.incompatiblePairs[j].rec_sex,
+                                              pool.incompatiblePairs[i].donor_sbp, donor_rec_abo_comp_ij,
+                                              0, pool.incompatiblePairs[i].donor_egfr, #assumed the donor and recip are NOT related
+                                              donor_rec_HLA_B_mis, donor_rec_HLA_DR_mis,
+                                              donor_rec_weight_ratio_ij)
+            donor_rec_abo_comp_ji = functions.are_blood_compatible(pool.incompatiblePairs[j].bloodTypeDonor, pool.compatiblePairs[i].bloodTypePatient)
+            donor_rec_weight_ratio_ji = util.calculate_weight_ratio(pool.incompatiblePairs[j].donor_weight, pool.incompatiblePairs[i].rec_weight)   
+            LKDPI_ji = util.calculate_lkdpi(pool.incompatiblePairs[j].donor_age, pool.incompatiblePairs[j].donor_afam, 
+                                            pool.incompatiblePairs[j].donor_bmi, pool.incompatiblePairs[j].donor_cig_use,
+                                              pool.incompatiblePairs[j].donor_sex, pool.incompatiblePairs[i].rec_sex,
+                                              pool.incompatiblePairs[j].donor_sbp, donor_rec_abo_comp_ji,
+                                              0, pool.incompatiblePairs[j].donor_egfr, #assumed the donor and recip are NOT related
+                                              donor_rec_HLA_B_mis, donor_rec_HLA_DR_mis,
+                                              donor_rec_weight_ratio_ji)
+            iiLKDPI[(i,j)] = LKDPI_ij
+            iiLKDPI[(j,i)] = LKDPI_ji
+                
 
 gen = DistributionGenerator()
 
@@ -79,23 +107,36 @@ for i in range(len(pool.compatiblePairs)):
         if not (compatible_1 and compatible_2): continue
         #LKPDI of incompatible < LKPDI of compatible for variable to exist
         #possible += 1
-        donor_rec_abo_comp = functions.are_blood_compatible(pool.incompatiblePairs[j].bloodTypeDonor, pool.compatiblePairs[i].bloodTypePatient)
+        
         donor_rec_HLA_B_mis = gen.gen_donor_rec_HLA_B_mis(0)
         donor_rec_HLA_DR_mis = gen.gen_donor_rec_HLA_DR_mis(0)
-        donor_rec_weight_ratio = util.calculate_weight_ratio(pool.incompatiblePairs[j].donor_weight, pool.compatiblePairs[i].rec_weight)
-
+        donor_rec_abo_comp_ci = functions.are_blood_compatible(pool.incompatiblePairs[j].bloodTypeDonor, pool.compatiblePairs[i].bloodTypePatient)
+        donor_rec_weight_ratio_ci = util.calculate_weight_ratio(pool.incompatiblePairs[j].donor_weight, pool.compatiblePairs[i].rec_weight)
         LKDPI_CI = util.calculate_lkdpi(pool.incompatiblePairs[j].donor_age, pool.incompatiblePairs[j].donor_afam, 
                                         pool.incompatiblePairs[j].donor_bmi, pool.incompatiblePairs[j].donor_cig_use,
                                           pool.incompatiblePairs[j].donor_sex, pool.compatiblePairs[i].rec_sex,
-                                          pool.incompatiblePairs[j].donor_sbp, donor_rec_abo_comp,
+                                          pool.incompatiblePairs[j].donor_sbp, donor_rec_abo_comp_ci,
                                           0, pool.incompatiblePairs[j].donor_egfr, #assumed the donor and recip are NOT related
                                           donor_rec_HLA_B_mis, donor_rec_HLA_DR_mis,
-                                          donor_rec_weight_ratio)
+                                          donor_rec_weight_ratio_ci)
         
         if LKDPI_CI < pool.compatiblePairs[i].LKDPI:
             #compatible_pairs += 1
             ciMatches[(i,j)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub = 1, name = "CI" + str((i,j)))
+            donor_rec_abo_comp_ic = functions.are_blood_compatible(pool.compatiblePairs[i].bloodTypeDonor, pool.incompatiblePairs[j].bloodTypePatient)
+            donor_rec_weight_ratio_ic = util.calculate_weight_ratio(pool.compatiblePairs[i].donor_weight, pool.incompatiblePairs[j].rec_weight)
+            LKDPI_IC = util.calculate_lkdpi(pool.compatiblePairs[i].donor_age, pool.compatiblePairs[i].donor_afam, 
+                                            pool.compatiblePairs[i].donor_bmi, pool.compatiblePairs[i].donor_cig_use,
+                                              pool.compatiblePairs[i].donor_sex, pool.incompatiblePairs[j].rec_sex,
+                                              pool.compatiblePairs[i].donor_sbp, donor_rec_abo_comp_ic,
+                                              0, pool.compatiblePairs[i].donor_egfr, #assumed the donor and recip are NOT related
+                                              donor_rec_HLA_B_mis, donor_rec_HLA_DR_mis,
+                                              donor_rec_weight_ratio_ic)
+            ciLKDPI[(j,i)] = LKDPI_CI           
+            icLKDPI[(i,j)] = LKDPI_IC
+            
     ciMatches[(i,-1)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub = 1, name = "CI" + str((i,-1)))
+    cLKDPI[i] = pool.compatiblePairs[i].LKDPI
     
     #compatible pair can only match with up to one incompatible pair or themselves
     model.addConstrs((quicksum(ciMatches[i,j] for j in range(-1,len(pool.incompatiblePairs)) if (i,j) in ciMatches)  <= 1 for i in range(len(pool.compatiblePairs))), "Compat  Matches")
@@ -104,7 +145,9 @@ for i in range(len(pool.compatiblePairs)):
     model.addConstrs((quicksum(iMatches[i,j] for j in range(len(pool.incompatiblePairs)) if (i,j) in iMatches) + quicksum(ciMatches[j,i] for j in range(len(pool.incompatiblePairs)) if (j,i) in ciMatches) <= 1 for i in range(len(pool.compatiblePairs))), "Incompat Matches")
     
     # model.addConstrs((iMatches[i,j] == iMatches[j,i] for i in range(T) for j in range(T) if (i,j) in iMatches), "Symmetry") 
-    obj = quicksum(ciMatches[i,j] for i in range(len(pool.compatiblePairs)) for j in range(-1, len(pool.incompatiblePairs)) if (i,j) in ciMatches) + quicksum(iMatches[i,j] for i in range(len(pool.incompatiblePairs)) for j in range(len(pool.incompatiblePairs)) if (i,j) in iMatches) 
+    #obj = quicksum(ciMatches[i,j] for k in ciMatches) + quicksum(iMatches[i,j] for k in iMatches) 
+    obj = quicksum(ciMatches[k]*(icLKDPI[(k)] + ciLKDPI[(k[1],k[0])]) for k in ciMatches) 
+    #+ quicksum(iMatches[k]*iiLKDPI[k] for k in iMatches) + quicksum(ciMatches([i,-1])*cLKDPI[i])
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
     print obj.getValue()
