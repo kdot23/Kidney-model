@@ -10,6 +10,7 @@ from SaidmanCompatibleGenerator import BJCpool
 from DistributionGenerator import *
 import functions
 import util
+import pickle
 
 parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file")
 """
@@ -23,11 +24,11 @@ pool = BJCSensitivityPool(100,100)
 for i in pool.compatibleIDs:
    print pool.compatibleIDs[i]
 """
-pool = BJCpool(100)
-print len(pool.compatibleID)
-print len(pool.incompatibleID)
-for i in range(len(pool.compatibleID)):
-   print pool.compatibleID[i]
+pool = BJCSensitivityPool(50,50)
+print len(pool.compatibleIDs)
+print len(pool.incompatibleIDs)
+for i in range(len(pool.compatibleIDs)):
+   print pool.compatibleIDs[i]
     
 """
 args=parser.parse_args()
@@ -71,8 +72,13 @@ gen = DistributionGenerator()
 
 for i in range(len(pool.compatiblePairs)):
     for j in range(len(pool.incompatiblePairs)):
+        compatible_1 = functions.are_blood_compatible(pool.compatiblePairs[i].bloodTypeDonor, pool.incompatiblePairs[j].bloodTypePatient) \
+                  and (not pool.compatiblePairs[i].saidman.isPositiveCrossmatch(pool.incompatiblePairs[j].patientCPRA))
+        compatible_2 = functions.are_blood_compatible(pool.incompatiblePairs[j].bloodTypeDonor, pool.compatiblePairs[i].bloodTypePatient) \
+                    and (not pool.incompatiblePairs[j].saidman.isPositiveCrossmatch(pool.compatiblePairs[i].patientCPRA))
+        if not (compatible_1 and compatible_2): continue
         #LKPDI of incompatible < LKPDI of compatible for variable to exist
-        possible += 1
+        #possible += 1
         donor_rec_abo_comp = functions.are_blood_compatible(pool.incompatiblePairs[j].bloodTypeDonor, pool.compatiblePairs[i].bloodTypePatient)
         donor_rec_HLA_B_mis = gen.gen_donor_rec_HLA_B_mis(0)
         donor_rec_HLA_DR_mis = gen.gen_donor_rec_HLA_DR_mis(0)
@@ -87,7 +93,7 @@ for i in range(len(pool.compatiblePairs)):
                                           donor_rec_weight_ratio)
         
         if LKDPI_CI < pool.compatiblePairs[i].LKDPI:
-            compatible_pairs += 1
+            #compatible_pairs += 1
             ciMatches[(i,j)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub = 1, name = "CI" + str((i,j)))
     ciMatches[(i,-1)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub = 1, name = "CI" + str((i,-1)))
     
