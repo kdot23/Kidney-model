@@ -1,16 +1,35 @@
-#inport modules
+#import modules
 import numpy as np
 import os
 import json
 from gurobipy import *
 import argparse
+from SaidmanCompatibleGenerator import SaidmanCompatibleGenerator
+from SaidmanCompatibleGenerator import BJCSensitivityPool
+from SaidmanCompatibleGenerator import BJCpool
+from DistributionGenerator import *
+import functions
+import util
 
 parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file")
+"""
 parser.add_argument('--inputFile', nargs='?', help="JSON File to be used")
 parser.add_argument('-i', '--inputDir', nargs='?', default='data', help='input directory to look for data files')
 parser.add_argument('-o', '--outputFile', nargs='?', help="CSV File for results to be saved to")
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
 
+#BJCSensitivityPool 
+pool = BJCSensitivityPool(100,100)
+for i in pool.compatibleIDs:
+   print pool.compatibleIDs[i]
+"""
+pool = BJCpool(100)
+print len(pool.compatibleID)
+print len(pool.incompatibleID)
+for i in range(len(pool.compatibleID)):
+   print pool.compatibleID[i]
+    
+"""
 args=parser.parse_args()
 results = "#nm\tnum_C\tnum_CI\tnum_II\tq\tc_q\tci_q\tii_q\n"
 if args.inputFile:
@@ -30,48 +49,64 @@ for d in data:
     Igraph = d[2]
     CIgraph = d[3]
     T = len(compat)
-    
-    model = Model('Kideny Optimizer')
-    iMatches = {}
-    ciMatches = {}
-    #only create variables for edges which exist
-    for i in range(T):
-        for j in range(T):
-            if Igraph[i][j] and Igraph[j][i]:
+""" 
+model = Model('Kideny Optimizer')
+iMatches = {}
+ciMatches = {}
+#only create variables for edges which exist
+
+
+for i in range(len(pool.incompatiblePairs)):
+    for j in range(len(pool.incompatiblePairs)):
+        if j > i:
+            #possible += 1
+            compatible_1 = functions.are_blood_compatible(pool.incompatiblePairs[i].bloodTypeDonor, pool.incompatiblePairs[j].bloodTypePatient) \
+                      and (not pool.incompatiblePairs[i].saidman.isPositiveCrossmatch(pool.incompatiblePairs[j].patientCPRA))
+            compatible_2 = functions.are_blood_compatible(pool.incompatiblePairs[j].bloodTypeDonor, pool.incompatiblePairs[i].bloodTypePatient) \
+                        and (not pool.incompatiblePairs[j].saidman.isPositiveCrossmatch(pool.incompatiblePairs[i].patientCPRA))
+            if compatible_1 and compatible_2:
                 iMatches[(i,j)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub = 1, name = "I" + str((i,j)))
-            if CIgraph[i][j] and incompat[j][2] > compat[i][2]:
-                ciMatches[(i,j)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub = 1, name = "CI" + str((i,j)))
-        ciMatches[(i,-1)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub = 1, name = "CI" + str((i,-1)))
-    
-    #first entry is which compatible pair, second entry is incompatible pair or -1 for self matching
-    #ciMatches are compatible to incompatible or compatible to themselves (-1)
-    #ciMatches = model.addVars(range(T), range(-1, T), vtype = GRB.BINARY, name="CIMatches")
-    #iMatches are incompatible to incompatible
-    #iMatches = model.addVars(range(T), range(T), vtype = GRB.BINARY, name = "IMatches")
+
+gen = DistributionGenerator()
+
+for i in range(len(pool.compatiblePairs)):
+    for j in range(len(pool.incompatiblePairs)):
+        #LKPDI of incompatible < LKPDI of compatible for variable to exist
+        possible += 1
+        donor_rec_abo_comp = functions.are_blood_compatible(pool.incompatiblePairs[j].bloodTypeDonor, pool.compatiblePairs[i].bloodTypePatient)
+        donor_rec_HLA_B_mis = gen.gen_donor_rec_HLA_B_mis(0)
+        donor_rec_HLA_DR_mis = gen.gen_donor_rec_HLA_DR_mis(0)
+        donor_rec_weight_ratio = util.calculate_weight_ratio(pool.incompatiblePairs[j].donor_weight, pool.compatiblePairs[i].rec_weight)
+
+        LKDPI_CI = util.calculate_lkdpi(pool.incompatiblePairs[j].donor_age, pool.incompatiblePairs[j].donor_afam, 
+                                        pool.incompatiblePairs[j].donor_bmi, pool.incompatiblePairs[j].donor_cig_use,
+                                          pool.incompatiblePairs[j].donor_sex, pool.compatiblePairs[i].rec_sex,
+                                          pool.incompatiblePairs[j].donor_sbp, donor_rec_abo_comp,
+                                          0, pool.incompatiblePairs[j].donor_egfr, #assumed the donor and recip are NOT related
+                                          donor_rec_HLA_B_mis, donor_rec_HLA_DR_mis,
+                                          donor_rec_weight_ratio)
+        
+        if LKDPI_CI < pool.compatiblePairs[i].LKDPI:
+            compatible_pairs += 1
+            ciMatches[(i,j)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub = 1, name = "CI" + str((i,j)))
+    ciMatches[(i,-1)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub = 1, name = "CI" + str((i,-1)))
     
     #compatible pair can only match with up to one incompatible pair or themselves
-    model.addConstrs((quicksum(ciMatches[i,j] for j in range(-1,T) if (i,j) in ciMatches)  <= 1 for i in range(T)), "Compat  Matches")
+    model.addConstrs((quicksum(ciMatches[i,j] for j in range(-1,len(pool.incompatiblePairs)) if (i,j) in ciMatches)  <= 1 for i in range(len(pool.compatiblePairs))), "Compat  Matches")
+    
     #incompatible pair can only match with up to one incompatible pair or one compatible pair
-    model.addConstrs((quicksum(iMatches[i,j] for j in range(T) if (i,j) in iMatches) + quicksum(ciMatches[j,i] for j in range(T) if (j,i) in ciMatches) <= 1 for i in range(T)), "Incompat Matches")
+    model.addConstrs((quicksum(iMatches[i,j] for j in range(len(pool.incompatiblePairs)) if (i,j) in iMatches) + quicksum(ciMatches[j,i] for j in range(len(pool.incompatiblePairs)) if (j,i) in ciMatches) <= 1 for i in range(len(pool.compatiblePairs))), "Incompat Matches")
     
-    model.addConstrs((iMatches[i,j] == iMatches[j,i] for i in range(T) for j in range(T) if (i,j) in iMatches), "Symmetry")
-    
-    #compatible will only exchange if they have a higher quality score due to the exchange
-    #model.addConstrs((ciMatches[i,j]*incompat[j][2] >= ciMatches[i,j]*compat[i][2] for i in range(T) for j in range(T)), " Compat Selfishness")
-    
-    #an edge between C and I can only exist if the pairs are compatible
-    #model.addConstrs((CIgraph[i][j] >= ciMatches[i,j] for i in range(T) for j in range(T)), "Compatible to Incompatible Compatibility")
-    
-    #an edge between two Is can only exist if the pairs are compatible 
-    #model.addConstrs((Igraph[i][j] >= iMatches[i,j] for i in range(T) for j in range(T)), "Incompatible Compatibility")
-    
-    #substitute this line for line 24 to allow for arbitrary length cycles in incompatible pool
-    #model.addConstrs((quicksum(iMatches[i,j] for j in range(T) if (i,j) in iMatches) == quicksum(iMatches[j,i] for j in range(T)) for i in range(T)), "Give one to get one")
-    
+    # model.addConstrs((iMatches[i,j] == iMatches[j,i] for i in range(T) for j in range(T) if (i,j) in iMatches), "Symmetry") 
+    obj = quicksum(ciMatches[i,j] for i in range(len(pool.compatiblePairs)) for j in range(-1, len(pool.incompatiblePairs)) if (i,j) in ciMatches) + quicksum(iMatches[i,j] for i in range(len(pool.incompatiblePairs)) for j in range(len(pool.incompatiblePairs)) if (i,j) in iMatches) 
+    model.setObjective(obj, GRB.MAXIMIZE) 
+    model.optimize()
+    print obj.getValue()
+"""   
     if (args.quality):
         obj = quicksum((compat[i][2]+incompat[j][2])*ciMatches[i,j] for i in range(T) for j in range(T) if (i,j) in ciMatches) + quicksum(compat[i][2]*ciMatches[i,-1] for i in range(T) ) + quicksum(incompat[i][2]*iMatches[i,j] for i in range(T) for j in range(T) if (i,j) in iMatches)
     else:
-        obj = quicksum(ciMatches[i,j] for i in range(T) for j in range(T) if (i,j) in ciMatches) + quicksum(ciMatches[i,-1] for i in range(T) ) + quicksum(iMatches[i,j] for i in range(T) for j in range(T) if (i,j) in iMatches)
+        obj = quicksum(ciMatches[i,j] for i in range(len(pool.compatiblePairs)) for j in range(pool.incompatiblePairs) if (i,j) in ciMatches) + quicksum(ciMatches[i,-1] for i in range(len(pool.compatiblePairs)) ) + quicksum(iMatches[i,j] for i in range(len(incompatiblePairs)) for j in range(len(incompatiblePairs)) if (i,j) in iMatches)
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
     num_matches = 0
@@ -149,3 +184,4 @@ if args.outputFile:
         f.write(results)
 else:
     print results
+"""
