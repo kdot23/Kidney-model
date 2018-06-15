@@ -20,14 +20,18 @@ model = Model('Kideny Optimizer')
 matchVars = {}
 for i in range(num_pairs):
     for j in range(num_pairs):
-        if matches[i][j][2] != 0:
+        if matches[i][j] != 0:
             matchVars[(i,j)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub = 1, name = "match_" + str((i,j)))
 
-model.addConstrs((quicksum(matchVars[i,j] for j in range(num_pairs) if (i,j) in matchVars) <= 1 \
-                  for i in range(num_pairs)), "Compat  Matches")
+model.addConstrs((quicksum(matchVars[t,i] for i in range(num_incompat) if (i,j) in matchVars) <= 1 \
+                  for t in range(num_pairs)), "Only match with one pair")
 
+model.addConstrs((quicksum(matchVars[t,i] for t in range(num_pairs)) + \
+                  quicksum(matchVars[i+T,j] for j in range(num_incompat)) <= 1 for i in range(num_incompat)), \
+                    "undirected graph")
+#add symmetry constraint??
 if (args.quality):
-    obj = quicksum(matchVars[i,j]*matches[i][j][2] for i in num_pairs for j in num_pairs)
+    obj = quicksum(matchVars[i,j]*matches[i][j] for i in num_pairs for j in num_pairs)
 else:
     obj = quicksum(matchVars[i,j] for i in num_pairs)
     
