@@ -35,6 +35,7 @@ for i in range(1,K+1):
         if matches[t][i] != 0:
             beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
             break
+beta[0] = 0
 
 
 model.addConstrs((matches[t][i] - alpha[t] - beta[i] - (beta[t-T+1] if t+1-T in beta else 0) <= 0 for t in alpha for i in beta), "something...")
