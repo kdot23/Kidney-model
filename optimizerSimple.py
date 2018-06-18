@@ -13,10 +13,17 @@ parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by
 parser.add_argument('--inputFile', nargs='?', help="JSON File to be used as input. List of number of \
                     incompatible pairs, number of compatible pairs, and list of all possible pairs with donor, recipient, egs")
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
+parser.add_argument('-i', '--inputDir', nargs='?', default='data', help='input directory to look for data files')
 args=parser.parse_args()
-with open (args.inputFile, 'r') as f:
-    data = json.load(f)
 
+if not args.inputDir:
+    with open (args.inputFile, 'r') as f:
+        data = json.load(f)
+else:
+    for fn in os.listdir(args.inputDir):
+        if fn == '.DS_Store': continue
+        with open(args.inputDir+'/'+fn, 'r') as f:
+            data.append(json.load(f))
 
 num_incompat = data[0]
 num_compat = data[1]
@@ -30,11 +37,7 @@ for i in range(num_pairs):
         if matches[i][j] != 0:
             matchVars[(i,j)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub=1,  name = "match_" + str((i,j)))
 
-<<<<<<< HEAD
 model.addConstrs((quicksum(matchVars[t,i] for i in range(num_incompat+1) if (t,i) in matchVars) <= 1 \
-=======
-model.addConstrs((quicksum(matchVars[t,i] for i in range(num_incompat + 1) if (t,i) in matchVars) <= 1 \
->>>>>>> e89469cdd4a5a1db3000b8aca5b82af3ce58e598
                   for t in range(num_pairs)), "Only match with one pair")
 
 model.addConstrs((quicksum(matchVars[t,i] for t in range(num_pairs) if (t,i) in matchVars) + \
