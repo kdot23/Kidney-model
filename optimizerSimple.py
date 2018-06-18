@@ -30,7 +30,11 @@ for i in range(num_pairs):
         if matches[i][j] != 0:
             matchVars[(i,j)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub=1,  name = "match_" + str((i,j)))
 
+<<<<<<< HEAD
 model.addConstrs((quicksum(matchVars[t,i] for i in range(num_incompat+1) if (t,i) in matchVars) <= 1 \
+=======
+model.addConstrs((quicksum(matchVars[t,i] for i in range(num_incompat + 1) if (t,i) in matchVars) <= 1 \
+>>>>>>> e89469cdd4a5a1db3000b8aca5b82af3ce58e598
                   for t in range(num_pairs)), "Only match with one pair")
 
 model.addConstrs((quicksum(matchVars[t,i] for t in range(num_pairs) if (t,i) in matchVars) + \

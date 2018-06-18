@@ -8,8 +8,8 @@ import util
 import json
 
 parser = argparse.ArgumentParser(description="Generates Donor recipient pairs and a quality pool for optimization")
-parser.add_argument('-K', '--num_incompatible', default=100, dest='K')
-parser.add_argument('-T', '--num_compatible', default=100, dest='T')
+parser.add_argument('-K', '--num_incompatible', default=100, dest='K', type = int)
+parser.add_argument('-T', '--num_compatible', default=100, dest='T', type = int)
 parser.add_argument('-o', '--output', default='data.json')
 
 args = parser.parse_args()
@@ -20,10 +20,16 @@ filename = args.output
 pool = BJCSensitivityPool(T, K)
 gen = DistributionGenerator()
 matches = []
+demo = []
 
 for i in range(T):
     matches.append([])
     matches[i].append(util.calculate_survival(pool.compatiblePairs[i].LKDPI))
+    demo.append([])
+    demo[i] = (pool.compatiblePairs[i].bloodTypePatient, pool.compatiblePairs[i].bloodTypeDonor, pool.compatiblePairs[i].donor_afam,\
+        pool.compatiblePairs[i].donor_age, pool.compatiblePairs[i].donor_sex, pool.compatiblePairs[i].donor_cig_use, \
+        pool.compatiblePairs[i].rec_sex, pool.compatiblePairs[i].donor_weight, pool.compatiblePairs[i].rec_weight, \
+        pool.compatiblePairs[i].donor_bmi)
     for j in range(K):
         compatible_1 = functions.are_blood_compatible(pool.compatiblePairs[i].bloodTypeDonor, pool.incompatiblePairs[j].bloodTypePatient) \
                   and (not pool.compatiblePairs[i].saidman.isPositiveCrossmatch(pool.incompatiblePairs[j].patientCPRA))
@@ -66,6 +72,11 @@ for i in range(T):
 for i in range(K):
     matches.append([])
     matches[i+T].append(0)
+    demo.append([])
+    demo[i+T] = (pool.incompatiblePairs[i].bloodTypePatient, pool.incompatiblePairs[i].bloodTypeDonor, pool.incompatiblePairs[i].donor_afam,\
+        pool.incompatiblePairs[i].donor_age, pool.incompatiblePairs[i].donor_sex, pool.incompatiblePairs[i].donor_cig_use, \
+        pool.incompatiblePairs[i].rec_sex, pool.incompatiblePairs[i].donor_weight, pool.incompatiblePairs[i].rec_weight, \
+        pool.incompatiblePairs[i].donor_bmi)
     for j in range(K):
         compatible_1 = functions.are_blood_compatible(pool.incompatiblePairs[i].bloodTypeDonor, pool.incompatiblePairs[j].bloodTypePatient) \
                   and (not pool.incompatiblePairs[i].saidman.isPositiveCrossmatch(pool.incompatiblePairs[j].patientCPRA))
