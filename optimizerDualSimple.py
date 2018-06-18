@@ -1,6 +1,7 @@
 from gurobipy import *
 import json
 import argparse
+import os
 
 
 parser = argparse.ArgumentParser(description="Computes the dual of our problem")
@@ -8,6 +9,7 @@ parser.add_argument('-i', '--input', default = 'data/', help='input directory to
 parser.add_argument('--inputFile', help='input file to use, by default will use all files in directory')
 parser.add_argument('-o', '--output', default='data.json', help='File to output results to')
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
+parser.add_argument('--trainData', action='store_true', help="Optimize for quality")
 args = parser.parse_args()
 
 inputfile = 'data.json'
