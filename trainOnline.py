@@ -7,6 +7,8 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i','--input', default='trainData.json')
+parser.add_argument('-o', default = "results.csv")
+parser.add_argument('--coef', action='store_true', help = "boolean for coefficients for linear model")
 args = parser.parse_args()
 
 
@@ -27,22 +29,26 @@ for d in data:
     demo = d[0]
     values.append([demo[v] for v in varsUsed])
     labels.append(d[1])
-
-
-"""
-LR = linear_model.LinearRegression()
-LR.fit(values, labels)
-for i in range(len(varsUsed)):
-    print varNames[varsUsed[i]] + ": " + str(LR.coef_[i])
+results = ''
+if args.coef:
+    LR = linear_model.LinearRegression()
+    LR.fit(values, labels)
+    for i in range(len(varsUsed)):
+        results += str(LR.coef_[i]) + "\t"
+    results += "\n"
 """
 #print LR.coef_
 #print "intercept: " + str(LR.intercept_)
 #print "R^2: " + str(LR.score())
 results = ''
-
+"""
+if args.coef:
+    with open(args.o, 'w') as f:
+        f.write(results)
+    exit()
 chunk_size = len(data) / num_chunks
 for i in range(num_chunks):
-    for j in range(1,8):
+    for j in range(1,5):
         test_chunk_val = values[i*chunk_size: (i+1)*chunk_size]
         test_chunk_lab = labels[i*chunk_size: (i+1)*chunk_size]
         train_chunk_val = values[: i*chunk_size] + values[(i+1)*chunk_size:]
@@ -55,7 +61,8 @@ for i in range(num_chunks):
         results +=  str(LR.score(X2, test_chunk_lab))+"\t"
     results += "\n"
     
-print results
+with open(args.o, 'w') as f:
+    f.write(results)
 
 
 """
