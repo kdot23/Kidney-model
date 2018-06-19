@@ -3,7 +3,6 @@ import json
 import argparse
 import os
 
-
 parser = argparse.ArgumentParser(description="Computes the dual of our problem")
 parser.add_argument('-i', '--input', default = 'data/', help='input directory to use')
 parser.add_argument('--inputFile', help='input file to use, by default will use all files in directory')
@@ -15,7 +14,7 @@ results = []
 data = []
 
 if args.inputFile:
-    with open(args.input+'/'+args.inputFile, 'r') as f:
+    with open(args.inputFile, 'r') as f:
         data.append(json.load(f))
 else:
     for fn in os.listdir(args.input):

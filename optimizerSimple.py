@@ -4,6 +4,7 @@
 Created on Fri Jun 15 11:05:58 2018
 
 @author: kelseylieberman
+Takes a directory (default) or a single file of data and optimizes the model for count or quality.
 """
 import json
 import argparse
@@ -46,7 +47,7 @@ for d in data:
     model.addConstrs((quicksum(matchVars[t,i] for t in range(num_pairs) if (t,i) in matchVars) + \
                       quicksum(matchVars[i+T-1,j] for j in range(1,num_incompat+1) if (i+T-1,j) in matchVars) <= 1 \
                       for i in range(1,num_incompat+1)), "undirected graph")
-    #add symmetry constraint??
+
     if (args.quality):
         obj = quicksum(matchVars[i,j]*matches[i][j] for i in range(num_pairs) for j in range(num_incompat+1) if (i,j) in matchVars)
     else:
