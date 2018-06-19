@@ -3,13 +3,19 @@ from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
 import tensorflow as tf
 from sklearn.model_selection import cross_val_score
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-i','--input', default='trainData.json')
+args = parser.parse_args()
+
 
 varNames = ["bloodTypePatient", "bloodTypeDonor", "donor_afam", "donor_age", "donor_sex", "donor_cig_use", \
             "rec_sex", "donor_weight", "rec_weight", "donor_bmi"]
 varsUsed = [0, 1, 3, 5, 8, 9]
-num_chunks = 10
+num_chunks = 5
 
-inputFile = 'trainData.json'
+inputFile = args.input
 
 with open(inputFile, 'r') as f:
     data = json.load(f)
@@ -33,7 +39,7 @@ print "intercept: " + str(LR.intercept_)
 #print "R^2: " + str(LR.score())
 
 chunk_size = len(data) / num_chunks
-for j in range(1,5):
+for j in range(1,8):
     print j
     print "\n\n\n"
     for i in range(num_chunks):
@@ -43,6 +49,7 @@ for j in range(1,5):
         train_chunk_lab = labels[: i*chunk_size] + labels[(i+1)*chunk_size:]
         poly = PolynomialFeatures(degree=j)
         X = poly.fit_transform(train_chunk_val)
+        LR = linear_model.LinearRegression()
         LR.fit(train_chunk_val, train_chunk_lab)
         print LR.score(test_chunk_val, test_chunk_lab)
     print '-----------------------------'
