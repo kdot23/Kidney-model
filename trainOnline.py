@@ -13,7 +13,7 @@ args = parser.parse_args()
 varNames = ["bloodTypePatient", "bloodTypeDonor", "donor_afam", "donor_age", "donor_sex", "donor_cig_use", \
             "rec_sex", "donor_weight", "rec_weight", "donor_bmi"]
 varsUsed = [0, 1, 3, 5, 8, 9]
-num_chunks = 5
+num_chunks = 10
 
 inputFile = args.input
 
@@ -28,7 +28,6 @@ for d in data:
     values.append([demo[v] for v in varsUsed])
     labels.append(d[1])
 
-print labels
 
 LR = linear_model.LinearRegression()
 LR.fit(values, labels)
@@ -50,8 +49,9 @@ for j in range(1,8):
         poly = PolynomialFeatures(degree=j)
         X = poly.fit_transform(train_chunk_val)
         LR = linear_model.LinearRegression()
-        LR.fit(train_chunk_val, train_chunk_lab)
-        print LR.score(test_chunk_val, test_chunk_lab)
+        LR.fit(X, train_chunk_lab)
+        X2 = poly.fit_transform(test_chunk_val)
+        print LR.score(X2, test_chunk_lab)
     print '-----------------------------'
 
 """

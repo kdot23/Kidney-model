@@ -14,7 +14,7 @@ results = []
 data = []
 
 if args.inputFile:
-    with open(args.inputFile, 'r') as f:
+    with open(args.input+'/'+args.inputFile, 'r') as f:
         data.append(json.load(f))
 else:
     for fn in os.listdir(args.input):
