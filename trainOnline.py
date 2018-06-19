@@ -29,19 +29,20 @@ for d in data:
     labels.append(d[1])
 
 
+"""
 LR = linear_model.LinearRegression()
 LR.fit(values, labels)
 for i in range(len(varsUsed)):
     print varNames[varsUsed[i]] + ": " + str(LR.coef_[i])
+"""
 #print LR.coef_
-print "intercept: " + str(LR.intercept_)
+#print "intercept: " + str(LR.intercept_)
 #print "R^2: " + str(LR.score())
+results = ''
 
 chunk_size = len(data) / num_chunks
-for j in range(1,8):
-    print j
-    print "\n\n\n"
-    for i in range(num_chunks):
+for i in range(num_chunks):
+    for j in range(1,8):
         test_chunk_val = values[i*chunk_size: (i+1)*chunk_size]
         test_chunk_lab = labels[i*chunk_size: (i+1)*chunk_size]
         train_chunk_val = values[: i*chunk_size] + values[(i+1)*chunk_size:]
@@ -51,8 +52,11 @@ for j in range(1,8):
         LR = linear_model.LinearRegression()
         LR.fit(X, train_chunk_lab)
         X2 = poly.fit_transform(test_chunk_val)
-        print LR.score(X2, test_chunk_lab)
-    print '-----------------------------'
+        results +=  str(LR.score(X2, test_chunk_lab))+"\t"
+    results += "\n"
+    
+print results
+
 
 """
 for i in range(2,6):
