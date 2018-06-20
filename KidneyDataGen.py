@@ -26,9 +26,11 @@ for i in range(T):
     matches.append([])
     matches[i].append(util.calculate_survival(pool.compatiblePairs[i].LKDPI))
     demo.append([])
-    demo[i] = (pool.compatiblePairs[i].bloodTypePatient, pool.compatiblePairs[i].bloodTypeDonor, pool.compatiblePairs[i].donor_afam,\
-        pool.compatiblePairs[i].donor_age, pool.compatiblePairs[i].donor_sex[0], pool.compatiblePairs[i].donor_cig_use[0], \
-        pool.compatiblePairs[i].rec_sex[0], pool.compatiblePairs[i].donor_weight, pool.compatiblePairs[i].rec_weight, \
+    demo[i] = (pool.compatiblePairs[i].bloodTypePatient == 0, pool.compatiblePairs[i].bloodTypePatient == 1, \
+        pool.compatiblePairs[i].bloodTypePatient == 2, pool.compatiblePairs[i].bloodTypePatient == 3, pool.compatiblePairs[i].bloodTypeDonor == 0, \
+        pool.compatiblePairs[i].bloodTypeDonor == 1, pool.compatiblePairs[i].bloodTypeDonor == 2, pool.compatiblePairs[i].bloodTypeDonor == 3, \
+        pool.compatiblePairs[i].donor_afam, pool.compatiblePairs[i].donor_age, pool.compatiblePairs[i].donor_sex[0], \
+        pool.compatiblePairs[i].donor_cig_use[0], pool.compatiblePairs[i].rec_sex[0], pool.compatiblePairs[i].donor_weight, pool.compatiblePairs[i].rec_weight, \
         pool.compatiblePairs[i].donor_bmi)
     for j in range(K):
         compatible_1 = functions.are_blood_compatible(pool.compatiblePairs[i].bloodTypeDonor, pool.incompatiblePairs[j].bloodTypePatient) \
@@ -73,7 +75,9 @@ for i in range(K):
     matches.append([])
     matches[i+T].append(0)
     demo.append([])
-    demo[i+T] = (pool.incompatiblePairs[i].bloodTypePatient, pool.incompatiblePairs[i].bloodTypeDonor, pool.incompatiblePairs[i].donor_afam,\
+    demo[i+T] = (pool.incompatiblePairs[i].bloodTypePatient == 0, pool.incompatiblePairs[i].bloodTypePatient == 1, pool.incompatiblePairs[i].bloodTypePatient == 2, \
+        pool.incompatiblePairs[i].bloodTypePatient == 3, pool.incompatiblePairs[i].bloodTypeDonor == 0, pool.incompatiblePairs[i].bloodTypeDonor == 1, pool.incompatiblePairs[i].bloodTypeDonor == 2, \
+        pool.incompatiblePairs[i].bloodTypeDonor == 3, pool.incompatiblePairs[i].donor_afam,\
         pool.incompatiblePairs[i].donor_age, pool.incompatiblePairs[i].donor_sex[0], pool.incompatiblePairs[i].donor_cig_use[0], \
         pool.incompatiblePairs[i].rec_sex[0], pool.incompatiblePairs[i].donor_weight, pool.incompatiblePairs[i].rec_weight, \
         pool.incompatiblePairs[i].donor_bmi)
