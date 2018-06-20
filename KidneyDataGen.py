@@ -78,6 +78,9 @@ for i in range(K):
         pool.incompatiblePairs[i].rec_sex[0], pool.incompatiblePairs[i].donor_weight, pool.incompatiblePairs[i].rec_weight, \
         pool.incompatiblePairs[i].donor_bmi)
     for j in range(K):
+        if i == j:
+            matches[i+T].append(0)
+            continue
         compatible_1 = functions.are_blood_compatible(pool.incompatiblePairs[i].bloodTypeDonor, pool.incompatiblePairs[j].bloodTypePatient) \
                   and (not pool.incompatiblePairs[i].saidman.isPositiveCrossmatch(pool.incompatiblePairs[j].patientCPRA))
         compatible_2 = functions.are_blood_compatible(pool.incompatiblePairs[j].bloodTypeDonor, pool.incompatiblePairs[i].bloodTypePatient) \
