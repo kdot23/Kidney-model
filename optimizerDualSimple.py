@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser(description="Computes the dual of our problem")
 parser.add_argument('-i', '--input', default = 'data/', help='input directory to use')
 parser.add_argument('--inputFile', help='input file to use, by default will use all files in directory')
 parser.add_argument('-o', '--output', help='output file to use')
-parser.add_argument('--quality', action='store_true', help="Optimize for quality")
+parser.add_argument('--quality', help="Optimize for quality")
 args = parser.parse_args()
 
 results = []
