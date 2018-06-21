@@ -15,7 +15,8 @@ parser.add_argument('--coef', action='store_true', help = "boolean for coefficie
 args = parser.parse_args()
 
 
-varNames = ["bloodTypePatient", "bloodTypeDonor", "donor_afam", "donor_age", "donor_sex", "donor_cig_use", \
+varNames = ["bloodTypePatient O", "bloodTypePatient A", "bloodTypePatient B", "bloodTypePatient AB",
+            "bloodTypeDonor", "donor_afam", "donor_age", "donor_sex", "donor_cig_use", \
             "rec_sex", "donor_weight", "rec_weight", "donor_bmi"]
 varsUsed = [0, 1, 3, 5, 8, 9]
 
