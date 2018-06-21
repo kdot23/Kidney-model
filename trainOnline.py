@@ -24,7 +24,7 @@ args = parser.parse_args()
 
 
 varNames = ["bloodTypePatient O", "bloodTypePatient A", "bloodTypePatient B", "bloodTypePatient AB",
-            "bloodTypeDonor", "donor_afam", "donor_age", "donor_sex", "donor_cig_use", \
+            "bloodTypeDonor O", "bloodTypeDonor A", "bloodTypeDonor B", "bloodTypeDonor AB", "donor_afam", "donor_age", "donor_sex", "donor_cig_use", \
             "rec_sex", "donor_weight", "rec_weight", "donor_bmi"]
 
 data = []
