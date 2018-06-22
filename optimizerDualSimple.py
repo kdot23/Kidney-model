@@ -24,7 +24,9 @@ else:
             data.append(json.load(f))
 
 for d in data:
+    #T is number of compatible pairs
     T = d[0]
+    #K is number of incompatible pairs
     K = d[1]
     matches = d[2]
     demo = d[3]

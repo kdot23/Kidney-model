@@ -3,7 +3,8 @@
 """
 Created on Wed Jun 20 11:21:22 2018
 
-@author: kelseylieberman
+Finds the optimal pair solutions using files that were trained by the online method.
+Output is csv format of optimal count and quality for the population.
 """
 import argparse
 import json
@@ -18,7 +19,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--trainFiles', nargs = "+", help = "List of files to train on")
 parser.add_argument('--testFiles', nargs = "+", help = "List of files to test")
 parser.add_argument('-d', '--degree', default=1, type=int, help='type of polynomial to use while training')
-parser.add_argument('-o', '--output')
+parser.add_argument('-o', '--output', help = 'csv file to output count and quality to')
 parser.add_argument("-v", "--useVars", nargs = "+", type = int, default=[0, 1, 2, 3, 4, 5, 6, 7, 9, 11, 14, 15], \
                     help = "List of variables")
 args = parser.parse_args()

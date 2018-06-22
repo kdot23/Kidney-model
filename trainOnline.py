@@ -1,3 +1,9 @@
+"""
+Imports a file or directory of data optimized with the optimizerDual and uses
+linear or polynomial regression to fit the model. Returns the score (R^2) value
+of the linear model. Can either train on different populations or parts of the
+same population.
+"""
 import json
 from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures

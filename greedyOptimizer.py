@@ -13,6 +13,7 @@ parser.add_argument('--inputFile', nargs='?', help="JSON File to be used as inpu
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
 parser.add_argument('-i', '--inputDir', nargs='?', default='data', help='input directory to look for data files')
 parser.add_argument('-o', '--output', help='write results to this file')
+parser.add_argument("-n", type = int, default = 2, help = "max number of connections incompatibles can be matched to and still removed from pool")
 args=parser.parse_args()
 
 data = []
@@ -45,7 +46,8 @@ for d in data:
     for i in range(num_compat):
         max_index = 0
         for j in range(1,num_incompat+1):
-            if matches[i][j] > matches[i][max_index] and j not in used_incompat:
+            if matches[i][j] > matches[i][max_index] and j not in used_incompat and \
+            sum(k>0 and k not in used_incompat for k in matches[i+T-1]) < args.n:
                 max_index = j
         quality += matches[i][max_index]
         used_incompat.add(max_index)
@@ -77,7 +79,7 @@ for d in data:
     if (args.quality):
         obj = quicksum(matchVars[i,j]*matches[i][j] for i in range(num_incompat) for j in range(num_incompat) if (i,j) in matchVars and (j,i) in matchVars)
     else:
-        obj = quicksum(matchVars[i,j] for i in range(num_pairs) for j in range(num_incompat+1) if (i,j) in matchVars)
+        obj = quicksum(matchVars[i,j] for i in range(num_incompat) for j in range(num_incompat+1) if (i,j) in matchVars and (j,i) in matchVars)
         
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
@@ -86,13 +88,14 @@ for d in data:
     for v in model.getVars():
         if v.X != 0:
             num_incompat_to_incompat += 1
-            print v.varName
     num_matches = num_compat_to_self + num_compat_to_incompat + num_incompat_to_compat + num_incompat_to_incompat
+"""
     pastData.append((quality, num_matches))
     if args.output:
         with open(args.output, 'a') as f:
             f.write(str(quality) + "\t" + str(num_matches) + "\t" +  str(num_incompat_to_incompat) +"\n")
                      #num_compat_to_self, num_compat_to_incompat, num_incompat_to_compat, num_incompat_to_incompat))
+print str(num_matches) + "\t" + str(quality) + "\n"
 avgs = np.mean(pastData, axis=0)
 stdevs = np.std(pastData, axis=0)
 s = ''
@@ -106,9 +109,10 @@ for a in avgs:
     s += str(a)+"\t"
 s+="\n"
 results = s+results
+"""
 
 if args.output:
-    with open(args.output, 'a') as f:
-        f.write(results)
+    with open(args.output, 'w') as f:
+        f.write(str(num_matches) + "\t" + str(quality) + "\n")
 else:
-    print results
+    print str(num_matches) + "\t" + str(quality) + "\n"
