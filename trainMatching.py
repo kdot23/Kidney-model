@@ -22,8 +22,8 @@ parser.add_argument('-d', '--degree', default=1, type=int, help='type of polynom
 parser.add_argument('-o', '--output')
 parser.add_argument("-v", "--useVars", nargs = "+", type = int, default=[0, 1, 2, 3, 4, 5, 6, 7, 9, 11, 14, 15], \
                     help = "List of variables")
-parser.add_argument('--forestRegression', action='store_true', help='Flag should be present if forest regression is to be used instead of \
-        Linear')
+parser.add_argument('--forestRegression', nargs='?', const=10, type=int, \
+        help='Flag should be present if forest regression is to be used instead of Linear, optional argument of number of trees')
 args = parser.parse_args()
 
 results = ''
@@ -47,7 +47,7 @@ X = poly.fit_transform(values)
 if not args.forestRegression:
     LR = linear_model.LinearRegression()
 else:
-    LR = ensemble.RandomForestRegressor()
+    LR = ensemble.RandomForestRegressor(n_estimators=args.forestRegression)
 LR.fit(X, labels)
 
 for fn in args.testFiles:
