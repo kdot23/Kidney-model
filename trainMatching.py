@@ -143,10 +143,10 @@ for fn in args.testFiles:
             bt2 = getBloodTypes(demo[v[1] + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
             graph += "node [color="+graph_colors[bt1[0]]+"];\n"
-            graph += "I" + str(v[0]) + " -> I" + str(v[1]-1) + ";\n"
+            graph += "I" + str(v[0]-T) + " -> I" + str(v[1]-1) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "node [color="+graph_colors[bt2[0]]+"];\n"
-            graph += "I" + str(v[1]-1) + " -> I" + str(v[0]) + ";\n"
+            graph += "I" + str(v[1]-1) + " -> I" + str(v[0]-T) + ";\n"
             
     results += str(count) + "\t" + str(quality) +"\n"
     graph += "}"
