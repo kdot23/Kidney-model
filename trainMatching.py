@@ -106,10 +106,10 @@ for fn in args.testFiles:
             bt1 = getBloodTypes(demo[t])
             bt2 = getBloodTypes(demo[max_i + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
-            graph += "node [color="+graph_colors[bt1[0]]+"];\n"
+            graph += "C" + str(t) + " [color="+graph_colors[bt1[0]]+"];\n"
+            graph += "I" + str(max_i-1) + " [color="+graph_colors[bt2[0]]+"];\n"
             graph += "C" + str(t) + " -> I" + str(max_i-1) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
-            graph += "node [color="+graph_colors[bt2[0]]+"];\n"
             graph += "I" + str(max_i-1) + " -> C" + str(t) + ";\n"
         else:
             count += 1
@@ -142,7 +142,8 @@ for fn in args.testFiles:
             bt1 = getBloodTypes(demo[v[0]])
             bt2 = getBloodTypes(demo[v[1] + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
-            graph += "node [color="+graph_colors[bt1[0]]+"];\n"
+            graph += "I" + str(v[0]-T) + " [color="+graph_colors[bt1[0]]+"];\n"
+            graph += "I" + str(v[1]-1) + " [color="+graph_colors[bt2[0]]+"];\n"
             graph += "I" + str(v[0]-T) + " -> I" + str(v[1]-1) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "node [color="+graph_colors[bt2[0]]+"];\n"

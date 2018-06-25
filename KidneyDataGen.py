@@ -76,7 +76,7 @@ for i in range(K):
     matches[i+T].append(0)
     demo.append([])
     demo[i+T] = (int( pool.incompatiblePairs[i].bloodTypePatient == 0 ), int( pool.incompatiblePairs[i].bloodTypePatient == 1 ), int( pool.incompatiblePairs[i].bloodTypePatient == 2 ), \
-        int( pool.incompatiblePairs[i].bloodTypePatient == 3 ), int( pool.incompatiblePairs[i].bloodTypeDonor == 0 ), int( pool.incompatiblePairs[i].bloodTypeDonor == 1 ), pool.incompatiblePairs[i].bloodTypeDonor == 2, \
+        int( pool.incompatiblePairs[i].bloodTypePatient == 3 ), int( pool.incompatiblePairs[i].bloodTypeDonor == 0 ), int( pool.incompatiblePairs[i].bloodTypeDonor == 1 ), int(pool.incompatiblePairs[i].bloodTypeDonor == 2), \
         int( pool.incompatiblePairs[i].bloodTypeDonor == 3 ), pool.incompatiblePairs[i].donor_afam,\
         pool.incompatiblePairs[i].donor_age, pool.incompatiblePairs[i].donor_sex[0], pool.incompatiblePairs[i].donor_cig_use[0], \
         pool.incompatiblePairs[i].rec_sex[0], pool.incompatiblePairs[i].donor_weight, pool.incompatiblePairs[i].rec_weight, \

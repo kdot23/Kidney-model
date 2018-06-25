@@ -91,10 +91,10 @@ for d in data:
             bt1 = getBloodTypes(demo[i])
             bt2 = getBloodTypes(demo[max_index + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
-            graph += "node [color="+graph_colors[bt1[0]]+"];\n"
+            graph += "C" + str(i) + " [color="+graph_colors[bt1[0]]+"];\n"
+            graph += "I" + str(max_index-1) + " [color="+graph_colors[bt2[0]]+"];\n"
             graph += "C" + str(i) + " -> I" + str(max_index-1) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
-            graph += "node [color="+graph_colors[bt2[0]]+"];\n"
             graph += "I" + str(max_index-1) + " -> C" + str(i) + ";\n"
     
     #gurobi optimization for remaining incompatible pairs
@@ -131,10 +131,10 @@ for d in data:
             bt1 = getBloodTypes(demo[v[0] + T])
             bt2 = getBloodTypes(demo[v[1] + T])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
-            graph += "node [color="+graph_colors[bt1[0]]+"];\n"
+            graph += "I" + str(v[0]) + " [color="+graph_colors[bt1[0]]+"];\n"
+            graph += "I" + str(v[1]) + " [color="+graph_colors[bt2[0]]+"];\n"
             graph += "I" + str(v[0]) + " -> I" + str(v[1]) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
-            graph += "node [color="+graph_colors[bt2[0]]+"];\n"
             graph += "I" + str(v[1]) + " -> I" + str(v[0]) + ";\n"
     graph += "}"
     if args.graph:
