@@ -5,6 +5,7 @@ import argparse
 from gurobipy import *
 import numpy as np
 from sets import Set
+import os
 
 parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file using a simple greedy algorithm")
 parser.add_argument('--inputFile', nargs='?', help="JSON File to be used as input. List of number of \
@@ -14,7 +15,30 @@ parser.add_argument('--quality', action='store_true', help="Optimize for quality
 parser.add_argument('-i', '--inputDir', nargs='?', default='data', help='input directory to look for data files')
 parser.add_argument('-o', '--output', help='write results to this file')
 parser.add_argument("-n", type = int, default = 2, help = "max number of connections incompatibles can be matched to and still removed from pool")
+parser.add_argument("--graph", help = "output a graphviz representation")
 args=parser.parse_args()
+
+graph_colors = ["red", "blue", "green", "black"]
+
+def getBloodTypes(demo):
+    bd,br=0,0
+    if demo[0]:
+        br = 0
+    elif demo[1]:
+        br = 1
+    elif demo[2]:
+        br = 2
+    elif demo[3]:
+        br = 3
+    if demo[4]:
+        bd = 0
+    elif demo[5]:
+        bd = 1
+    elif demo[6]:
+        bd = 2
+    elif demo[7]:
+        bd = 3
+    return br,bd
 
 data = []
 if args.inputFile:
@@ -34,6 +58,7 @@ for d in data:
     num_pairs = num_incompat + num_compat
     matches = d[2]
     T = num_compat
+    demo = d[3]
     
     quality = 0
     num_compat_to_self = 0
@@ -41,8 +66,9 @@ for d in data:
     num_incompat_to_compat = 0
     num_incompat_to_incompat = 0
     
+    graph = "digraph G { \n"
     #greedy algorithm for compatible pairs by order of index
-    used_incompat = Set([])
+    used_incompat = set()
     for i in range(num_compat):
         max_index = 0
         for j in range(1,num_incompat+1):
@@ -53,9 +79,22 @@ for d in data:
         used_incompat.add(max_index)
         if max_index == 0:
             num_compat_to_self += 1
+            bt = getBloodTypes(demo[i])
+            graph += "edge [color="+graph_colors[bt[1]] + "];\n"
+            graph += "node [color="+graph_colors[bt[0]]+"];\n"
+            graph += "C" + str(i) + " -> C" + str(i) + ";\n"
+            
         else:
             num_compat_to_incompat += 1
             num_incompat_to_compat += 1
+            bt1 = getBloodTypes(demo[i])
+            bt2 = getBloodTypes(demo[max_index + T - 1])
+            graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
+            graph += "node [color="+graph_colors[bt1[0]]+"];\n"
+            graph += "C" + str(i) + " -> I" + str(max_index-1) + ";\n"
+            graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
+            graph += "node [color="+graph_colors[bt2[0]]+"];\n"
+            graph += "I" + str(max_index-1) + " -> C" + str(i) + ";\n"
     
     #gurobi optimization for remaining incompatible pairs
     model = Model('Kideny Optimizer')
@@ -65,9 +104,9 @@ for d in data:
         incompat_matches.append(matches[i + num_compat][1:])
 
     for i in range(num_incompat):
-        if i in used_incompat: continue
+        if i+1 in used_incompat: continue
         for j in range(num_incompat):
-            if j not in used_incompat and incompat_matches[i][j] != 0:
+            if j+1 not in used_incompat and incompat_matches[i][j] != 0:
                 matchVars[(i,j)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub=1,  name = "incompat_match_" + str((i,j)))
     
     model.addConstrs((quicksum(matchVars[i,j] for j in range(num_incompat) if (i,j) in matchVars) <= 1 \
@@ -85,9 +124,18 @@ for d in data:
     model.optimize()
     
     quality += obj.getValue()
-    for v in model.getVars():
-        if v.X != 0:
+    for v in matchVars:
+        if matchVars[v].X != 0:
             num_incompat_to_incompat += 1
+            bt1 = getBloodTypes(demo[v[0] + T])
+            bt2 = getBloodTypes(demo[v[1] + T])
+            graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
+            graph += "node [color="+graph_colors[bt1[0]]+"];\n"
+            graph += "I" + str(v[0]) + " -> I" + str(v[1]) + ";\n"
+            graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
+            graph += "node [color="+graph_colors[bt2[0]]+"];\n"
+            graph += "I" + str(v[1]) + " -> I" + str(v[0]) + ";\n"
+            
     num_matches = num_compat_to_self + num_compat_to_incompat + num_incompat_to_compat + num_incompat_to_incompat
 """
     pastData.append((quality, num_matches))
@@ -116,3 +164,9 @@ if args.output:
         f.write(str(num_matches) + "\t" + str(quality) + "\n")
 else:
     print str(num_matches) + "\t" + str(quality) + "\n"
+    
+graph += "}"
+if args.graph:
+    with open(args.graph+".gv", 'w') as f:
+        f.write(graph)
+    os.system('dot -Tpdf ' + args.graph + ".gv -o " + args.graph +".pdf")
