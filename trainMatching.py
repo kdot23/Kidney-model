@@ -13,6 +13,7 @@ import random
 from sklearn import linear_model
 from sklearn import ensemble
 from sklearn.preprocessing import PolynomialFeatures
+import os
 
 
 
@@ -25,9 +26,34 @@ parser.add_argument("-v", "--useVars", nargs = "+", type = int, default=[0, 1, 2
                     help = "List of variables")
 parser.add_argument('--forestRegression', nargs='?', const=10, type=int, \
         help='Flag should be present if forest regression is to be used instead of Linear, optional argument of number of trees')
+parser.add_argument('--graph', help='stem of output file for graph')
 args = parser.parse_args()
 
+
+graph_colors = ["red", "blue", "green", "black"]
+
+def getBloodTypes(demo):
+    bd,br=0,0
+    if demo[0]:
+        br = 0
+    elif demo[1]:
+        br = 1
+    elif demo[2]:
+        br = 2
+    elif demo[3]:
+        br = 3
+    if demo[4]:
+        bd = 0
+    elif demo[5]:
+        bd = 1
+    elif demo[6]:
+        bd = 2
+    elif demo[7]:
+        bd = 3
+    return br,bd
+
 results = ''
+graph = "digraph G {\n"
 varsUsed = args.useVars
 data = []
 for fn in args.trainFiles:
@@ -51,6 +77,7 @@ else:
     LR = ensemble.RandomForestRegressor(n_estimators=args.forestRegression)
 LR.fit(X, labels)
 
+dataIndex = 0
 for fn in args.testFiles:
     
     with open(fn, 'r') as f:
@@ -76,9 +103,21 @@ for fn in args.testFiles:
             count += 2
             quality += matches[t][max_i]
             del beta[max_i]
+            bt1 = getBloodTypes(demo[t])
+            bt2 = getBloodTypes(demo[max_i + T - 1])
+            graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
+            graph += "node [color="+graph_colors[bt1[0]]+"];\n"
+            graph += "C" + str(t) + " -> I" + str(max_i-1) + ";\n"
+            graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
+            graph += "node [color="+graph_colors[bt2[0]]+"];\n"
+            graph += "I" + str(max_i-1) + " -> C" + str(t) + ";\n"
         else:
             count += 1
             quality += matches[t][max_i]
+            bt = getBloodTypes(demo[t])
+            graph += "edge [color="+graph_colors[bt[1]] + "];\n"
+            graph += "node [color="+graph_colors[bt[0]]+"];\n"
+            graph += "C" + str(t) + " -> C" + str(t) + ";\n"
     
     
     model = Model('Online Matching')
@@ -100,15 +139,27 @@ for fn in args.testFiles:
         if matchVars[v].X != 0:
             count += 2
             quality += matches[v[0]][v[1]]
+            bt1 = getBloodTypes(demo[v[0]])
+            bt2 = getBloodTypes(demo[v[1] + T - 1])
+            graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
+            graph += "node [color="+graph_colors[bt1[0]]+"];\n"
+            graph += "I" + str(v[0]) + " -> I" + str(v[1]-1) + ";\n"
+            graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
+            graph += "node [color="+graph_colors[bt2[0]]+"];\n"
+            graph += "I" + str(v[1]-1) + " -> I" + str(v[0]) + ";\n"
             
     results += str(count) + "\t" + str(quality) +"\n"
+    graph += "}"
+    if args.graph:
+        with open(args.graph+str(dataIndex)+'.gv', 'w') as f:
+            f.write(graph)
+        os.system('dot -Tpdf ' + args.graph + str(dataIndex) +'.gv -o ' + args.graph + str(dataIndex) + '.pdf')
+    dataIndex += 1
     
 if args.output:
     with open(args.output, 'w') as f:
         f.write(results)
 else:
     print results
-    
-    
     
     

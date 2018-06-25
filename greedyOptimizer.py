@@ -51,6 +51,7 @@ else:
             data.append(json.load(f))
 
 pastData = []
+dataIndex = 0
 
 for d in data:    
     num_incompat = d[0]
@@ -135,8 +136,14 @@ for d in data:
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "node [color="+graph_colors[bt2[0]]+"];\n"
             graph += "I" + str(v[1]) + " -> I" + str(v[0]) + ";\n"
+    graph += "}"
+    if args.graph:
+        with open(args.graph+str(dataIndex)+".gv", 'w') as f:
+            f.write(graph)
+        os.system('dot -Tpdf ' + args.graph + str(dataIndex) + ".gv -o " + args.graph + str(dataIndex) +".pdf")
             
     num_matches = num_compat_to_self + num_compat_to_incompat + num_incompat_to_compat + num_incompat_to_incompat
+    dataIndex += 1
 """
     pastData.append((quality, num_matches))
     if args.output:
@@ -165,8 +172,3 @@ if args.output:
 else:
     print str(num_matches) + "\t" + str(quality) + "\n"
     
-graph += "}"
-if args.graph:
-    with open(args.graph+".gv", 'w') as f:
-        f.write(graph)
-    os.system('dot -Tpdf ' + args.graph + ".gv -o " + args.graph +".pdf")
