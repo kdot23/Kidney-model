@@ -8,6 +8,7 @@ import json
 from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.model_selection import cross_val_score
+from sklearn import ensemble
 import argparse
 import os
 import random
@@ -23,6 +24,8 @@ parser.add_argument('-d', '--degree', default=[1], type=int, nargs='+', help='ty
 parser.add_argument('-v', '--useVars', default=[0, 1, 2, 3, 4, 5, 6, 7, 9, 11, 14, 15], type=int, nargs='+', help='variables to train off of' )
 parser.add_argument('-o', '--output', help='output File')
 parser.add_argument('-n', '--numChunks', default=10, type=int, help='n for n-fold cross validation')
+parser.add_argument('--forestRegression', nargs='?', const=10, type=int, help='flag should be present if forest regression is to be used \
+        instead of linear, optional argument of number of trees')
 parser.add_argument('--coef', action='store_true', help = "boolean for coefficients for linear model")
 parser.add_argument('--saveModel', help='optional flag to save model, argument is stem of file(e.g. if file is given, then model of degree 3 \
         will be saved to file3.dat)')
@@ -52,10 +55,16 @@ results = ''
 
 
 if args.coef:
-    LR = linear_model.LinearRegression()
-    LR.fit(values, labels)
-    for i in range(len(args.useVars)):
-        results += str(LR.coef_[i]) + "\t"
+    if not args.forestRegression:
+        LR = linear_model.LinearRegression()
+        LR.fit(values, labels)
+        for i in range(len(args.useVars)):
+            results += str(LR.coef_[i]) + "\t"
+    else:
+        LR = ensemble.RandomForestRegressor(n_estimators=args.forestRegression)
+        LR.fit(values, labels)
+        for i in range(len(args.useVars)):
+            results += str(LR.feature_importances_[i])+"\t"
     results += "\n"
 """
 #print LR.coef_
@@ -81,7 +90,10 @@ if not args.diffPops:
             train_chunk_lab = labels[: i*chunk_size] + labels[(i+1)*chunk_size:]
             poly = PolynomialFeatures(degree=j)
             X = poly.fit_transform(train_chunk_val)
-            LR = linear_model.LinearRegression()
+            if not args.forestRegression:
+                LR = linear_model.LinearRegression()
+            else:
+                LR = ensemble.RandomForestRegressor(n_estimators=args.forestRegression)
             LR.fit(X, train_chunk_lab)
             X2 = poly.fit_transform(test_chunk_val)
             results +=  str(LR.score(X2, test_chunk_lab))+"\t"
@@ -103,7 +115,10 @@ else:
         for i in args.degree:
             poly = PolynomialFeatures(degree=i)
             X = poly.fit_transform(values)
-            LR = linear_model.LinearRegression()
+            if not args.forestRegression:
+                LR = linear_model.LinearRegression()
+            else:
+                LR = ensemble.RandomForestRegressor(n_estimators=args.forestRegression)
             LR.fit(X, labels)
             X2 = poly.fit_transform(testValues)
             results += str(LR.score(X2, testLabels)) + "\t"
@@ -121,7 +136,10 @@ if args.saveModel:
     for i in args.degree:
         poly = PolynomialFeatures(degree=i)
         X = poly.fit_transform(values)
-        LR = linear_model.LinearRegression()
+        if not args.forestRegression:
+            LR = linear_model.LinearRegression()
+        else:
+            LR = ensemble.RandomForestRegressor(n_estimators=args.forestRegression)
         LR.fit(X,labels)
         with open(args.saveModel+str(i)+'.dat', 'wb') as f:
             pickle.dump(LR, f)
