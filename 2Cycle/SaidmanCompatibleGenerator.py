@@ -239,7 +239,7 @@ class BJCPair():
 
         self.pr_PraIncompatiblity = self.saidman.generatePraIncompatibility()
         
-        if (self.rec_sex == 0)
+        if (self.rec_sex == 0):
             self.patientFemale = True
         else:
             self.patientFemale = False
