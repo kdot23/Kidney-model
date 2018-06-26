@@ -31,7 +31,7 @@ for i in range(T):
         int( pool.compatiblePairs[i].bloodTypeDonor == 1 ), int( pool.compatiblePairs[i].bloodTypeDonor == 2 ), int( pool.compatiblePairs[i].bloodTypeDonor == 3 ), \
         pool.compatiblePairs[i].donor_afam, pool.compatiblePairs[i].donor_age, pool.compatiblePairs[i].donor_sex[0], \
         pool.compatiblePairs[i].donor_cig_use[0], pool.compatiblePairs[i].rec_sex[0], pool.compatiblePairs[i].donor_weight, pool.compatiblePairs[i].rec_weight, \
-        pool.compatiblePairs[i].donor_bmi)
+        pool.compatiblePairs[i].donor_bmi, pool.compatiblePairs[i].donor_egfr, pool.compatiblePairs[i].donor_sbp, pool.compatiblePairs[i].patientCPRA)
     for j in range(K):
         compatible_1 = functions.are_blood_compatible(pool.compatiblePairs[i].bloodTypeDonor, pool.incompatiblePairs[j].bloodTypePatient) \
                   and (not pool.compatiblePairs[i].saidman.isPositiveCrossmatch(pool.incompatiblePairs[j].patientCPRA))
@@ -80,7 +80,7 @@ for i in range(K):
         int( pool.incompatiblePairs[i].bloodTypeDonor == 3 ), pool.incompatiblePairs[i].donor_afam,\
         pool.incompatiblePairs[i].donor_age, pool.incompatiblePairs[i].donor_sex[0], pool.incompatiblePairs[i].donor_cig_use[0], \
         pool.incompatiblePairs[i].rec_sex[0], pool.incompatiblePairs[i].donor_weight, pool.incompatiblePairs[i].rec_weight, \
-        pool.incompatiblePairs[i].donor_bmi)
+        pool.incompatiblePairs[i].donor_bmi, pool.incompatiblePairs[i].donor_egfr, pool.incompatiblePairs[i].donor_sbp, pool.incompatiblePairs[i].patientCPRA)
     for j in range(K):
         if i == j:
             matches[i+T].append(0)

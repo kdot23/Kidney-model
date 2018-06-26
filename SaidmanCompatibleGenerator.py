@@ -231,18 +231,20 @@ class BJCPair():
         # self.donor_afam = self.generator.gen_donor_afam()
 
         self.donor_cig_use = self.generator.gen_donor_cig_use()
+        # 1 is male
         self.rec_sex = self.generator.gen_rec_sex()
         self.donor_weight = self.generator.gen_donor_weight(self.donor_sex)
         self.rec_weight = self.generator.gen_rec_weight(self.rec_sex)
         self.donor_bmi = self.generator.gen_donor_bmi(self.donor_weight)
 
         self.pr_PraIncompatiblity = self.saidman.generatePraIncompatibility()
-
-        if (self.saidman.isPatientFemale()):
+        
+        if (self.rec_sex == 0)
             self.patientFemale = True
         else:
             self.patientFemale = False
-
+        
+        
         if (self.saidman.isDonorSpouse()):
             self.donorSpouse = True
         else:

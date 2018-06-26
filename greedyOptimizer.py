@@ -124,7 +124,7 @@ for d in data:
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
     
-    quality += obj.getValue()
+    quality += obj.getValue()/2
     for v in matchVars:
         if matchVars[v].X != 0:
             num_incompat_to_incompat += 1
@@ -167,7 +167,7 @@ results = s+results
 """
 
 if args.output:
-    with open(args.output, 'w') as f:
+    with open(args.output, 'a') as f:
         f.write(str(num_matches) + "\t" + str(quality) + "\n")
 else:
     print str(num_matches) + "\t" + str(quality) + "\n"
