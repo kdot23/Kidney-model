@@ -9,12 +9,11 @@ from sets import Set
 import os
 
 parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file using a simple greedy algorithm")
-parser.add_argument('--inputFiles', nargs='+', help="JSON File to be used as input. List of number of \
+parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="List of .dat files to be used as input. List of number of \
                     incompatible pairs, number of compatible pairs, list of quality(egs) of all possible pairs \
                     and demographic information. File created in KidneyDataGen")
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
-parser.add_argument('-i', '--inputDir', nargs='?', default='data', help='input directory to look for data files')
-parser.add_argument('-o', '--output', help='write results to this file')
+parser.add_argument('-o', '--output', help='write results to this file (.csv)')
 parser.add_argument("-n", type = int, default = 2, help = "max number of connections incompatibles can be matched to and still removed from pool")
 parser.add_argument("--graph", help = "output a graphviz representation")
 args=parser.parse_args()

@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by
 parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="list of .dat files to be used as input. List of number of \
                     incompatible pairs, number of compatible pairs, and list of all possible pairs with donor, recipient, egs")
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
-parser.add_argument('-o', '--output', default='data.dat')
+parser.add_argument('-o', '--output', default='data.csv')
 args=parser.parse_args()
 
 data = []

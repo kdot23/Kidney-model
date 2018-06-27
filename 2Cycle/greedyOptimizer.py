@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-import json
+import pickle
 import argparse
 from gurobipy import *
 import numpy as np
@@ -8,12 +8,11 @@ from sets import Set
 import os
 
 parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file using a simple greedy algorithm")
-parser.add_argument('--inputFile', nargs='?', help="JSON File to be used as input. List of number of \
+parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="List of .dat files to be used as input. List of number of \
                     incompatible pairs, number of compatible pairs, list of quality(egs) of all possible pairs \
                     and demographic information. File created in KidneyDataGen")
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
-parser.add_argument('-i', '--inputDir', nargs='?', default='data', help='input directory to look for data files')
-parser.add_argument('-o', '--output', help='write results to this file')
+parser.add_argument('-o', '--output', help='write results to this file (.csv)')
 parser.add_argument("-n", type = int, default = 2, help = "max number of connections incompatibles can be matched to and still removed from pool")
 parser.add_argument("--graph", help = "output a graphviz representation")
 args=parser.parse_args()
@@ -41,16 +40,11 @@ def getBloodTypes(demo):
     return br,bd
 
 data = []
-if args.inputFile:
-    with open (args.inputFile, 'r') as f:
-        data.append(json.load(f))
-else:
-    for fn in os.listdir(args.inputDir):
-        if fn == '.DS_Store': continue
-        with open(args.inputDir+'/'+fn, 'r') as f:
-            data.append(json.load(f))
+for fn in args.inputFiles:
+    with open (fn, 'rb') as f:
+        data.append(pickle.load(f))
 
-pastData = []
+results = ''
 dataIndex = 0
 
 for d in data:    
@@ -144,31 +138,11 @@ for d in data:
             
     num_matches = num_compat_to_self + num_compat_to_incompat + num_incompat_to_compat + num_incompat_to_incompat
     dataIndex += 1
-"""
-    pastData.append((quality, num_matches))
-    if args.output:
-        with open(args.output, 'a') as f:
-            f.write(str(quality) + "\t" + str(num_matches) + "\t" +  str(num_incompat_to_incompat) +"\n")
-                     #num_compat_to_self, num_compat_to_incompat, num_incompat_to_compat, num_incompat_to_incompat))
-print str(num_matches) + "\t" + str(quality) + "\n"
-avgs = np.mean(pastData, axis=0)
-stdevs = np.std(pastData, axis=0)
-s = ''
-results = ''
-for std in stdevs:
-    s += str(std)+"\t"
-s += "\n"
-results = s+"\n\n\n"+results
-s = ''
-for a in avgs:
-    s += str(a)+"\t"
-s+="\n"
-results = s+results
-"""
+    results += str(num_matches) + "\t" + str(quality) + "\n"
 
 if args.output:
-    with open(args.output, 'a') as f:
-        f.write(str(num_matches) + "\t" + str(quality) + "\n")
+    with open(args.output, 'w') as f:
+        f.write(results)
 else:
-    print str(num_matches) + "\t" + str(quality) + "\n"
+    print results
     
