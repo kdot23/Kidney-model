@@ -158,7 +158,7 @@ for fn in args.testFiles:
     dataIndex += 1
     
 if args.output:
-    with open(args.output, 'a') as f:
+    with open(args.output, 'w') as f:
         f.write(results)
 else:
     print results
