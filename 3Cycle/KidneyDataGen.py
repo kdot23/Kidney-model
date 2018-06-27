@@ -59,11 +59,11 @@ for i in range(T):
             lkdpi_ic = getLKDPI(pool.incompatiblePairs[j], pool.compatiblePairs[i])
             if lkdpi_ic < pool.compatiblePairs[i].LKDPI:
                 lkdpi_ci = getLKDPI(pool.compatiblePairs[i], pool.incompatiblePairs[j])
-                matches[i][j][0] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ci)
+                matches[i][j+1][0] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ci)
             else:
-                matches[i][j][0] = 0
+                matches[i][j+1][0] = 0
         else:
-            matches[i][j][0] = 0
+            matches[i][j+1][0] = 0
         for k in range(K):
             #compatible[i] donates to incompatible[j] who donates to incompatible[k] who donates back to compatible[i]
             if compatible(pool.compatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[k]) \
@@ -82,29 +82,28 @@ for i in range(T):
 
 
 for i in range(K):
-    matches.append([])
     matches[i+T][0][0]=0
     demo[i+T] = generateDemo(pool.incompatiblePairs[i])
     for j in range(K):
-        if i == j-1:
+        if i == j:
             for k in range(K+1):
-                matches[i+T][j][k]=0
+                matches[i+T][j+1][k]=0
         else:
             if compatible(pool.incompatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[i]):
                 lkdpi_1 = getLKDPI(pool.incompatiblePairs[i], pool.incompatiblePairs[j])
                 lkdpi_2 = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[i])
-                matches[i+T][j][0] = util.calculate_survival(lkdpi_1)+util.calculate_survival(lkdpi_2)
+                matches[i+T][j+1][0] = util.calculate_survival(lkdpi_1)+util.calculate_survival(lkdpi_2)
             else:
-                matches[i+T][j][0] = 0
+                matches[i+T][j+1][0] = 0
             for k in range(K):
                 if compatible(pool.incompatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[k]) \
                 and compatible(pool.incompatiblePairs[k], pool.compatiblePairs[i]):
                     lkdpi_1 = getLKDPI(pool.incompatiblePairs[i], pool.incompatiblePairs[j])
                     lkdpi_2 = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[k])
                     lkdpi_3 = getLKDPI(pool.incompatiblePairs[k], pool.incompatiblePairs[i])
-                    matches[i][j][k+1] = util.calculate_survival(lkdpi_1) + util.calculate_survival(lkdpi_2) + util.calculate_survival(lkdpi_3)
+                    matches[i][j+1][k+1] = util.calculate_survival(lkdpi_1) + util.calculate_survival(lkdpi_2) + util.calculate_survival(lkdpi_3)
                 else:
-                    matches[i][j][k+1] = 0
+                    matches[i][j+1][k+1] = 0
 
 with open(filename, 'w') as f:
     f.write(json.dumps((K,T,matches, demo)))
