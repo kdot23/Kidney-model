@@ -1,9 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jun 15 11:05:58 2018
-
-@author: kelseylieberman
 Takes a directory (default) or a single file of data and optimizes the model for count or quality.
 """
 import json

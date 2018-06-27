@@ -21,7 +21,7 @@ otherWise n fold cross validation is performed')
 parser.add_argument('-i','--input', default='./', help='input directory to be used')
 parser.add_argument('--diffPops', action='store_true', help='flag for whether or not to use cross validation, see inputFiles flag')
 parser.add_argument('-d', '--degree', default=[1], type=int, nargs='+', help='types of polynomials to use while training')
-parser.add_argument('-v', '--useVars', default=[0, 1, 2, 3, 4, 5, 6, 7, 9, 11, 14, 15], type=int, nargs='+', help='variables to train off of' )
+parser.add_argument('-v', '--useVars', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], type=int, nargs='+', help='variables to train off of' )
 parser.add_argument('-o', '--output', help='output File')
 parser.add_argument('-n', '--numChunks', default=10, type=int, help='n for n-fold cross validation')
 parser.add_argument('--forestRegression', nargs='?', const=10, type=int, help='flag should be present if forest regression is to be used \
@@ -34,13 +34,13 @@ args = parser.parse_args()
 
 varNames = ["bloodTypePatient O", "bloodTypePatient A", "bloodTypePatient B", "bloodTypePatient AB",
             "bloodTypeDonor O", "bloodTypeDonor A", "bloodTypeDonor B", "bloodTypeDonor AB", "donor_afam", "donor_age", "donor_sex", "donor_cig_use", \
-            "rec_sex", "donor_weight", "rec_weight", "donor_bmi"]
-
+            "rec_sex", "donor_weight", "rec_weight", "donor_bmi", "donor_egfr", "donor_sbp", "rec_CPRA"]
+print args.useVars
 data = []
 for fn in args.inputFiles:
     with open(args.input+'/'+fn, 'r') as f:
         data += json.load(f)
-
+print len(data)
 random.shuffle(data)
 
 values = []
@@ -50,6 +50,8 @@ for d in data:
     demo = d[0]
     values.append([demo[v] for v in args.useVars])
     labels.append(d[1])
+print str(values[0]) + "\n"
+print str(labels)
 results = ''
 
 
