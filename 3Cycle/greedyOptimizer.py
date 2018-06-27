@@ -60,9 +60,9 @@ for d in data:
     num_incompat = d[0]
     num_compat = d[1]
     num_pairs = num_incompat + num_compat
-    matches = d[2]
+    matches = d[3]
     T = num_compat
-    demo = d[3]
+    demo = d[4]
     
     quality = 0
     num_compat_to_self = 0
@@ -73,7 +73,7 @@ for d in data:
     graph = "digraph G { \n"
     #greedy algorithm for compatible pairs by order of index
     used_incompat = set()
-    for i in range(num_compat):
+    for i in range(1,num_compat+1):
         max_index = max((v for v in matches if v[0] == i and v[1] not in used_incompat and v[2] not in used_incompat), key=matches.get)
         quality += matches[max_index]
         if max_index[1] != 0:
@@ -106,14 +106,14 @@ for d in data:
     #gurobi optimization for remaining incompatible pairs
     model = Model('Kideny Optimizer')
     matchVars = {v:model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub=1,  name = "incompat_match_" + str(v)) for v in matches if v[0] >= T and \
-            v[0]-T+1 not in used_incompat and v[1] not in used_incompat and v[2] not in used_incompat}
+            v[0]-T not in used_incompat and v[1] not in used_incompat and v[2] not in used_incompat}
 
     model.addConstrs((quicksum(matchVars[t,i,j] for i in range(num_incompat+1) for j in range(num_incompat+1) if (t,i,j) in matchVars) <= 1 \
-                      for t in range(num_pairs)), "Only match with one pair")
+                      for t in range(1,num_pairs+1)), "Only match with one pair")
     
-    model.addConstrs((quicksum(matchVars[t,i,j] for t in range(num_pairs) for j in range(num_incompat+1) if (t,i,j) in matchVars) \
-                     + quicksum(matchVars[t,j,i] for t in range(num_pairs) for j in range(1, num_incompat+1) if (t,j,i) in matchVars)\
-                     + quicksum(matchVars[i+T-1,j,jp] for j in range(1,num_incompat+1) for jp in range(num_incompat+1) if (i+T-1,j,jp) in matchVars)\
+    model.addConstrs((quicksum(matchVars[t,i,j] for t in range(1,num_pairs+1) for j in range(num_incompat+1) if (t,i,j) in matchVars) \
+                     + quicksum(matchVars[t,j,i] for t in range(1,num_pairs+1) for j in range(1, num_incompat+1) if (t,j,i) in matchVars)\
+                     + quicksum(matchVars[i+T,j,jp] for j in range(1,num_incompat+1) for jp in range(num_incompat+1) if (i+T,j,jp) in matchVars)\
                      <= 1 for i in range(1,num_incompat+1)), "undirected graph")
 
     if (args.quality):
@@ -126,6 +126,7 @@ for d in data:
     model.optimize()
     
     quality += obj.getValue()/2
+    """
     for v in matchVars:
         if matchVars[v].X != 0:
             num_incompat_to_incompat += 1
@@ -137,6 +138,7 @@ for d in data:
             graph += "I" + str(v[0]) + " -> I" + str(v[1]) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "I" + str(v[1]) + " -> I" + str(v[0]) + ";\n"
+            """
     graph += "}"
     if args.graph:
         with open(args.graph+str(dataIndex)+".gv", 'w') as f:
