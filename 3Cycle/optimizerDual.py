@@ -28,20 +28,20 @@ for d in data:
     T = d[0]
     #K is number of incompatible pairs
     K = d[1]
-    matches = d[2]
-    demo = d[3]
+    matches = d[3]
+    demo = d[4]
     
     model = Model("Dual Optimizer")
     
     alpha = {}
     beta = {}
     
-    for t in range(T+K):
+    for t in range(1,T+K+1):
         if any(k[0] == t for k in matches):
             alpha[t] = model.addVar(vtype = GRB.CONTINUOUS, lb=0, name='alpha_'+str(t))
     
     for i in range(1,K+1):
-        if any(k[0] == i+T-1 for k in matches):
+        if any(k[0] == i+T for k in matches):
             beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
         elif any(k[1] == i for k in matches):
             beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
@@ -51,10 +51,10 @@ for d in data:
     beta[0] = 0
     
     if args.quality:
-        model.addConstrs((matches[t,i,j] - alpha[t] - beta[i] - beta[j] - (beta[t-T+1] if t+1-T in beta else 0) <= 0 for t in alpha for i in beta  \
+        model.addConstrs((matches[t,i,j] - alpha[t] - beta[i] - beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta  \
                  for j in beta if (t,i,j) in matches), "something...")
     else:
-        model.addConstrs((1 - alpha[t] - beta[i] - beta[j] - (beta[t-T+1] if t+1-T in beta else 0) <= 0 for t in alpha for i in beta \
+        model.addConstrs((1 - alpha[t] - beta[i] - beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta \
                 for j in beta if (t,i,j) in matches), "something...")
     
     obj = quicksum(alpha[t] for t in alpha) + quicksum(beta[i] for i in beta)

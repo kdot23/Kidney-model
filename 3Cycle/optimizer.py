@@ -46,7 +46,7 @@ for d in data:
     num_incompat = d[0]
     num_compat = d[1]
     num_pairs = num_incompat + num_compat
-    matches = d[2]
+    matches = d[3]
     T = num_compat
     model = Model('Kideny Optimizer')
     matchVars = {}
@@ -54,11 +54,11 @@ for d in data:
         matchVars[v] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub=1,  name = "match_" + str(v))
     
     model.addConstrs((quicksum(matchVars[t,i,j] for i in range(num_incompat+1) for j in range(num_incompat+1) if (t,i,j) in matchVars) <= 1 \
-                      for t in range(num_pairs)), "Only match with one pair")
+                      for t in range(1,num_pairs+1)), "Only match with one pair")
     
-    model.addConstrs((quicksum(matchVars[t,i,j] for t in range(num_pairs) for j in range(num_incompat+1) if (t,i,j) in matchVars) \
-                     + quicksum(matchVars[t,j,i] for t in range(num_pairs) for j in range(1, num_incompat+1) if (t,j,i) in matchVars)\
-                     + quicksum(matchVars[i+T-1,j,jp] for j in range(1,num_incompat+1) for jp in range(num_incompat+1) if (i+T-1,j,jp) in matchVars)\
+    model.addConstrs((quicksum(matchVars[t,i,j] for t in range(1,num_pairs+1) for j in range(num_incompat+1) if (t,i,j) in matchVars) \
+                     + quicksum(matchVars[t,j,i] for t in range(1,num_pairs+1) for j in range(1, num_incompat+1) if (t,j,i) in matchVars)\
+                     + quicksum(matchVars[i+T,j,jp] for j in range(1,num_incompat+1) for jp in range(num_incompat+1) if (i+T,j,jp) in matchVars)\
                      <= 1 for i in range(1,num_incompat+1)), "undirected graph")
 
     if (args.quality):

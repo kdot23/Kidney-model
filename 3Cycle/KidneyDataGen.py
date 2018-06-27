@@ -31,8 +31,10 @@ misMatches = {}
 for i in range(T+K):
     for j in range(T+K):
         if j < T and i < T: continue
-        misMatches[i,j] = (gen.gen_donor_rec_HLA_B_mis(0), gen.gen_donor_rec_HLA_DR_mis(0))
-matches = {}
+        misMatches[i+1,j+1] = (gen.gen_donor_rec_HLA_B_mis(0), gen.gen_donor_rec_HLA_DR_mis(0))
+matchesUndirected = {}
+matches2C = {}
+matches3C = {}
 demo = []
 
 def generateDemo(pair):
@@ -57,25 +59,30 @@ demo = [0]*(T+K)
 
 #starting the cycle with a compatible pair
 for i in range(T):
-    matches[i,0,0] = util.calculate_survival(pool.compatiblePairs[i].LKDPI)
+    matches2C[i+1,0] = util.calculate_survival(pool.compatiblePairs[i].LKDPI)
+    matches3C[i+1,0,0] = util.calculate_survival(pool.compatiblePairs[i].LKDPI)
+    matchesUndirected[i+1,0] = util.calculate_survival(pool.compatiblePairs[i].LKDPI)
     demo[i] = generateDemo(pool.compatiblePairs[i])
     for j in range(K):
         if compatible(pool.compatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.compatiblePairs[i]): 
-            lkdpi_ic = getLKDPI(pool.incompatiblePairs[j], pool.compatiblePairs[i], misMatches[j+T,i][0], misMatches[j+T,i][1])
+            lkdpi_ic = getLKDPI(pool.incompatiblePairs[j], pool.compatiblePairs[i], misMatches[j+T+1,i+1][0], misMatches[j+T+1,i+1][1])
             #compatibes will only donate with incentive (note: lower LKDPI is better)
             if lkdpi_ic < pool.compatiblePairs[i].LKDPI:
-                lkdpi_ci = getLKDPI(pool.compatiblePairs[i], pool.incompatiblePairs[j], misMatches[i,j+T][0], misMatches[i,j+T][1])
-                matches[i,j+1,0] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ci)
+                lkdpi_ci = getLKDPI(pool.compatiblePairs[i], pool.incompatiblePairs[j], misMatches[i+1,j+T+1][0], misMatches[i+1,j+T+1][1])
+                matches2C[i+1,j+1] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ci)
+                matches3C[i+1,j+1,0] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ci)
+                matchesUndirected[i+1,j+T+1] = util.calculate_survival(lkdpi_ci)
+                matchesUndirected[j+T+1,i+1] = util.calculate_survival(lkdpi_ci)
         for k in range(K):
             #compatible[i] donates to incompatible[j] who donates to incompatible[k] who donates back to compatible[i]
             if compatible(pool.compatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[k]) \
             and compatible(pool.incompatiblePairs[k], pool.compatiblePairs[i]):
-                lkdpi_ic = getLKDPI(pool.incompatiblePairs[k], pool.compatiblePairs[i], misMatches[k+T,i][0], misMatches[k+T,i][1])
+                lkdpi_ic = getLKDPI(pool.incompatiblePairs[k], pool.compatiblePairs[i], misMatches[k+T+1,i+1][0], misMatches[k+T+1,i+1][1])
                 #if there is an incentive for the compatible pair to join the cycle
                 if lkdpi_ic < pool.compatiblePairs[i].LKDPI:                    
-                    lkdpi_ii = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[k], misMatches[j+T,k+T][0], misMatches[j+T,k+T][1])
-                    lkdpi_ci = getLKDPI(pool.compatiblePairs[i], pool.incompatiblePairs[j], misMatches[i,j+T][0], misMatches[i,j+T][1])
-                    matches[i,j+1,k+1] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ii) + util.calculate_survival(lkdpi_ci)
+                    lkdpi_ii = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[k], misMatches[j+T+1,k+T+1][0], misMatches[j+T+1,k+T+1][1])
+                    lkdpi_ci = getLKDPI(pool.compatiblePairs[i], pool.incompatiblePairs[j], misMatches[i+1,j+T+1][0], misMatches[i+1,j+T+1][1])
+                    matches3C[i+1,j+1,k+1] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ii) + util.calculate_survival(lkdpi_ci)
             
 
 
@@ -85,16 +92,19 @@ for i in range(K):
         if i == j: continue
         else:
             if compatible(pool.incompatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[i]):
-                lkdpi_1 = getLKDPI(pool.incompatiblePairs[i], pool.incompatiblePairs[j], misMatches[i+T,j+T][0], misMatches[i+T,j+T][1])
-                lkdpi_2 = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[i], misMatches[j+T,i+T][0], misMatches[j+T,i+T][1])
-                matches[i+T,j+1,0] = util.calculate_survival(lkdpi_1)+util.calculate_survival(lkdpi_2)
+                lkdpi_1 = getLKDPI(pool.incompatiblePairs[i], pool.incompatiblePairs[j], misMatches[i+T+1,j+T+1][0], misMatches[i+T+1,j+T+1][1])
+                lkdpi_2 = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[i], misMatches[j+T+1,i+T+1][0], misMatches[j+T+1,i+T+1][1])
+                matches2C[i+T+1,j+1] = util.calculate_survival(lkdpi_1)+util.calculate_survival(lkdpi_2)
+                matches3C[i+T+1,j+1,0] = util.calculate_survival(lkdpi_1)+util.calculate_survival(lkdpi_2)
+                matchesUndirected[i+T+1,j+T+1] = util.calculate_survival(lkdpi_1)
+                matchesUndirected[j+T+1,i+T+1] = util.calculate_survival(lkdpi_2)
             for k in range(K):
                 if compatible(pool.incompatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[k]) \
                 and compatible(pool.incompatiblePairs[k], pool.compatiblePairs[i]):
-                    lkdpi_1 = getLKDPI(pool.incompatiblePairs[i], pool.incompatiblePairs[j], misMatches[i+T,j+T][0], misMatches[i+T,j+T][1])
-                    lkdpi_2 = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[k], misMatches[j+T,k+T][0], misMatches[j+T,k+T][1])
-                    lkdpi_3 = getLKDPI(pool.incompatiblePairs[k], pool.incompatiblePairs[i], misMatches[k+T,i+T][0], misMatches[k+T,i+T][1])
-                    matches[i+T,j+1,k+1] = util.calculate_survival(lkdpi_1) + util.calculate_survival(lkdpi_2) + util.calculate_survival(lkdpi_3)
+                    lkdpi_1 = getLKDPI(pool.incompatiblePairs[i], pool.incompatiblePairs[j], misMatches[i+T+1,j+T+1][0], misMatches[i+T+1,j+T+1][1])
+                    lkdpi_2 = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[k], misMatches[j+T+1,k+T+1][0], misMatches[j+T+1,k+T+1][1])
+                    lkdpi_3 = getLKDPI(pool.incompatiblePairs[k], pool.incompatiblePairs[i], misMatches[k+T+1,i+T+1][0], misMatches[k+T+1,i+T+1][1])
+                    matches3C[i+T+1,j+1,k+1] = util.calculate_survival(lkdpi_1) + util.calculate_survival(lkdpi_2) + util.calculate_survival(lkdpi_3)
 
 with open(filename, 'wb') as f:
-    pickle.dump((K, T, matches, demo), f)
+    pickle.dump((K, T, matches2C, matches3C, demo, misMatches, matchesUndirected), f)
