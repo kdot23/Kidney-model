@@ -69,7 +69,7 @@ for d in data:
     quality = sum(matchVars[v].X*matches[v] for v in matchVars)
     count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
     
-    results += quality + "\t" + count + "\n"
+    results += str(quality) + "\t" + str(count) + "\n"
 
 if args.output:
     with open(args.output, 'w') as f:
