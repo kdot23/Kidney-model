@@ -1,5 +1,6 @@
 from gurobipy import *
 import json
+import pickle
 import argparse
 import os
 
@@ -15,12 +16,12 @@ results = []
 data = []
 
 if args.inputFile:
-    with open(args.input+'/'+args.inputFile, 'r') as f:
-        data.append(json.load(f))
+    with open(args.input+'/'+args.inputFile, 'rb') as f:
+        data.append(pickle.load(f))
 else:
     for fn in os.listdir(args.input):
-        with open(args.input+'/'+fn, 'r') as f:
-            data.append(json.load(f))
+        with open(args.input+'/'+fn, 'rb') as f:
+            data.append(pickle.load(f))
 
 for d in data:
     #T is number of compatible pairs
@@ -36,39 +37,25 @@ for d in data:
     beta = {}
     
     for t in range(T+K):
-        for i in range(K+1):
-            if sum(matches[t][i]) > 0:
-                alpha[t] = model.addVar(vtype = GRB.CONTINUOUS, lb=0, name='alpha_'+str(t))
-                break
+        if any(k[0] == t for k in matches):
+            alpha[t] = model.addVar(vtype = GRB.CONTINUOUS, lb=0, name='alpha_'+str(t))
     
     for i in range(1,K+1):
-        found = False
-        for j in range(1, K+1):
-            if sum(matches[i+T-1][j]) > 0:
-                    beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
-                    found = True
-                    break
-        if found: continue
-        for t in range(T+K):
-            if sum(matches[t][i]) != 0:
-                beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
-                break
-            for j in range(1, K+1):
-                if matches[t][j][i] != 0:
-                    beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
-                    found = True
-                    break
-            if found: break
-
+        if any(k[0] == i+T-1 for k in matches):
+            beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
+        elif any(k[1] == i for k in matches):
+            beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
+        elif any(k[2] == i for k in matches):
+            beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
 
     beta[0] = 0
     
     if args.quality:
-        model.addConstrs((matches[t][i][j] - alpha[t] - beta[i] - beta[j] - (beta[t-T+1] if t+1-T in beta else 0) <= 0 for t in alpha for i in beta  \
-                 for j in beta if matches[t][i][j] != 0), "something...")
+        model.addConstrs((matches[t,i,j] - alpha[t] - beta[i] - beta[j] - (beta[t-T+1] if t+1-T in beta else 0) <= 0 for t in alpha for i in beta  \
+                 for j in beta if (t,i,j) in matches), "something...")
     else:
         model.addConstrs((1 - alpha[t] - beta[i] - beta[j] - (beta[t-T+1] if t+1-T in beta else 0) <= 0 for t in alpha for i in beta \
-                for j in beta if matches[t][i][j] != 0), "something...")
+                for j in beta if (t,i,j) in matches), "something...")
     
     obj = quicksum(alpha[t] for t in alpha) + quicksum(beta[i] for i in beta)
     model.setObjective(obj, GRB.MINIMIZE)
