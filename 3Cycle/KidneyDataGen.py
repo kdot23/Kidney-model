@@ -26,8 +26,6 @@ T = args.T
 filename = args.output
 pool = BJCSensitivityPool(T, K)
 gen = DistributionGenerator()
-matches = []
-demo = []
 
 def generateDemo(pair):
     return (int(pair.bloodTypePatient == 0), int(pair.bloodTypePatient == 1 ), int(pair.bloodTypePatient == 2 ), \
