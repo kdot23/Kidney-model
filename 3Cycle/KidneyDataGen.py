@@ -17,7 +17,7 @@ import pickle
 parser = argparse.ArgumentParser(description="Generates Donor recipient pairs and a quality pool for optimization")
 parser.add_argument('-K', '--num_incompatible', default=100, dest='K', type = int)
 parser.add_argument('-T', '--num_compatible', default=100, dest='T', type = int)
-parser.add_argument('-o', '--output', default='data.json')
+parser.add_argument('-o', '--output', default='data.dat')
 
 args = parser.parse_args()
 
