@@ -1,5 +1,10 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+"""
+Generates data for pools of incompatible pairs allowing up to 3 cycles. Outputs a json file with
+the number of compatible pairs, number of incompatible pairs, 3D list of matches and demographic information 
+about each pair.
+"""
 import argparse
 from SaidmanCompatibleGenerator import SaidmanCompatibleGenerator
 from SaidmanCompatibleGenerator import BJCSensitivityPool
@@ -50,6 +55,7 @@ for i in range(T+K):
     for j in range(K+1):
         matches[i][j] = [0]*(K+1)
 demo = [0]*(T+K)
+
 #starting the cycle with a compatible pair
 for i in range(T):
     matches[i][0][0] = util.calculate_survival(pool.compatiblePairs[i].LKDPI)
@@ -57,6 +63,7 @@ for i in range(T):
     for j in range(K):
         if compatible(pool.compatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.compatiblePairs[i]): 
             lkdpi_ic = getLKDPI(pool.incompatiblePairs[j], pool.compatiblePairs[i])
+            #compatibes will only donate with incentive (note: lower LKDPI is better)
             if lkdpi_ic < pool.compatiblePairs[i].LKDPI:
                 lkdpi_ci = getLKDPI(pool.compatiblePairs[i], pool.incompatiblePairs[j])
                 matches[i][j+1][0] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ci)
@@ -73,11 +80,11 @@ for i in range(T):
                 if lkdpi_ic < pool.compatiblePairs[i].LKDPI:                    
                     lkdpi_ii = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[k])
                     lkdpi_ci = getLKDPI(pool.compatiblePairs[i], pool.incompatiblePairs[j])
-                    matches[i][j][k+1] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ii) + util.calculate_survival(lkdpi_ci)
+                    matches[i][j+1][k+1] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ii) + util.calculate_survival(lkdpi_ci)
                 else:
-                    matches[i][j][k+1] = 0
+                    matches[i][j+1][k+1] = 0
             else:
-                matches[i][j][k+1] = 0
+                matches[i][j+1][k+1] = 0
             
 
 
@@ -101,9 +108,9 @@ for i in range(K):
                     lkdpi_1 = getLKDPI(pool.incompatiblePairs[i], pool.incompatiblePairs[j])
                     lkdpi_2 = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[k])
                     lkdpi_3 = getLKDPI(pool.incompatiblePairs[k], pool.incompatiblePairs[i])
-                    matches[i][j+1][k+1] = util.calculate_survival(lkdpi_1) + util.calculate_survival(lkdpi_2) + util.calculate_survival(lkdpi_3)
+                    matches[i+T][j+1][k+1] = util.calculate_survival(lkdpi_1) + util.calculate_survival(lkdpi_2) + util.calculate_survival(lkdpi_3)
                 else:
-                    matches[i][j+1][k+1] = 0
+                    matches[i+T][j+1][k+1] = 0
 
 with open(filename, 'w') as f:
     f.write(json.dumps((K,T,matches, demo)))
