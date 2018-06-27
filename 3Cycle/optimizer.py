@@ -9,8 +9,8 @@ Created on Wed Jun 27 09:07:27 2018
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-Takes a directory (default) or a single file of data and optimizes the model for count or quality.
-Allows cycles of up to three pairs.
+Takes a list of .dat files from KidneyDataGen and optimizes the model for count or quality.
+Returns count and quality for each population allowing cycles of up to three pairs.
 """
 import pickle
 import argparse
@@ -18,21 +18,16 @@ from gurobipy import *
 import numpy as np
 
 parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file")
-parser.add_argument('--inputFile', nargs='?', help="JSON File to be used as input. List of number of \
+parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="list of .dat files to be used as input. List of number of \
                     incompatible pairs, number of compatible pairs, and list of all possible pairs with donor, recipient, egs")
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
-parser.add_argument('-i', '--inputDir', nargs='?', default='data', help='input directory to look for data files')
+parser.add_argument('-o', '--output', default='data.dat')
 args=parser.parse_args()
-data = []
-if args.inputFile:
-    with open (args.inputFile, 'rb') as f:
-        data.append(pickle.load(f))
-else:
-    for fn in os.listdir(args.inputDir):
-        if fn == '.DS_Store': continue
-        with open(args.inputDir+'/'+fn, 'rb') as f:
-            data.append(pickle.load(f))
 
+data = []
+for fn in args.inputFiles:
+    with open (fn, 'rb') as f:
+        data.append(pickle.load(f))
 
 def COUNT(v):
     if v[1] == 0:
@@ -41,7 +36,7 @@ def COUNT(v):
         return 2
     return 3
 
-pastData = []
+results = ''
 for d in data:    
     num_incompat = d[0]
     num_compat = d[1]
@@ -63,34 +58,21 @@ for d in data:
 
     if (args.quality):
         obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
+
     else:
         obj = quicksum(COUNT(v)*matchVars[v] for v in matchVars)
+        count = obj
         
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
     
-    num_matches = 0
-    for v in model.getVars():
-        if v.X != 0:
-            num_matches += 1
-    quality = 0
-    for t in range(num_pairs):
-        for i in range(num_incompat+1):
-            for j in range(num_incompat + 1):
-                if (i,j) in matchVars:
-                    quality += matchVars[i,j].X*matches[i][j]
-    pastData.append((obj.getValue(), quality, num_matches, quality/num_matches))
-avgs = np.mean(pastData, axis=0)
-stdevs = np.std(pastData, axis=0)
-s = ''
-results = ''
-for std in stdevs:
-    s += str(std)+"\t"
-s += "\n"
-results = s+"\n\n\n"+results
-s = ''
-for a in avgs:
-    s += str(a)+"\t"
-s+="\n"
-results = s+results
-print results
+    quality = sum(matchVars[v].X*matches[v] for v in matchVars)
+    count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
+    
+    results += quality + "\t" + count + "\n"
+
+if args.output:
+    with open(args.output, 'w') as f:
+        f.write(results)
+else:
+    print results

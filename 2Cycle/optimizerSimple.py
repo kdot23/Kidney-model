@@ -15,14 +15,21 @@ parser.add_argument('--quality', action='store_true', help="Optimize for quality
 parser.add_argument('-i', '--inputDir', nargs='?', default='data', help='input directory to look for data files')
 args=parser.parse_args()
 data = []
+
 if args.inputFile:
-    with open (args.inputFile, 'r') as f:
-        data.append(json.load(f))
+    with open (args.inputFile, 'rb') as f:
+        data.append(pickle.load(f))
 else:
     for fn in os.listdir(args.inputDir):
         if fn == '.DS_Store': continue
-        with open(args.inputDir+'/'+fn, 'r') as f:
-            data.append(json.load(f))
+        with open(args.inputDir+'/'+fn, 'rb') as f:
+            data.append(pickle.load(f))
+def COUNT(v):
+    if v[1] == 0:
+        return 1
+    if v[2] == 0:
+        return 2
+    return 3
 
 pastData = []
 for d in data:    
@@ -33,10 +40,8 @@ for d in data:
     T = num_compat
     model = Model('Kideny Optimizer')
     matchVars = {}
-    for i in range(num_pairs):
-        for j in range(num_incompat+1):
-            if matches[i][j] != 0:
-                matchVars[(i,j)] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub=1,  name = "match_" + str((i,j)))
+    for v in matches:
+        matchVars[v] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub=1,  name = "match_" + str(v))
     
     model.addConstrs((quicksum(matchVars[t,i] for i in range(num_incompat+1) if (t,i) in matchVars) <= 1 \
                       for t in range(num_pairs)), "Only match with one pair")
@@ -44,12 +49,11 @@ for d in data:
     model.addConstrs((quicksum(matchVars[t,i] for t in range(num_pairs) if (t,i) in matchVars) + \
                       quicksum(matchVars[i+T-1,j] for j in range(1,num_incompat+1) if (i+T-1,j) in matchVars) <= 1 \
                       for i in range(1,num_incompat+1)), "undirected graph")
-
     if (args.quality):
-        obj = quicksum(matchVars[i,j]*matches[i][j] for i in range(num_pairs) for j in range(num_incompat+1) if (i,j) in matchVars)
+        obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
     else:
-        obj = quicksum(matchVars[i,j] for i in range(num_pairs) for j in range(num_incompat+1) if (i,j) in matchVars)
-        
+        obj = quicksum(COUNT(v)*matchVars[v] for v in matchVars)
+  
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
     
