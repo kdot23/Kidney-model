@@ -132,6 +132,7 @@ for d in data:
     model.optimize()
     
     quality += obj.getValue()/2
+    """
     for v in matchVars:
         if matchVars[v].X != 0:
             num_incompat_to_incompat += 1
@@ -143,6 +144,7 @@ for d in data:
             graph += "I" + str(v[0]) + " -> I" + str(v[1]) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "I" + str(v[1]) + " -> I" + str(v[0]) + ";\n"
+            """
     graph += "}"
     if args.graph:
         with open(args.graph+str(dataIndex)+".gv", 'w') as f:
