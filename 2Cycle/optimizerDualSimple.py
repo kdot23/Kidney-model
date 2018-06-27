@@ -28,7 +28,7 @@ for d in data:
     #K is number of incompatible pairs
     K = d[1]
     matches = d[2]
-    demo = d[3]
+    demo = d[4]
     
     model = Model("Dual Optimizer")
     

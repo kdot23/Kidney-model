@@ -53,7 +53,7 @@ for d in data:
     num_pairs = num_incompat + num_compat
     matches = d[2]
     T = num_compat
-    demo = d[3]
+    demo = d[4]
     
     quality = 0
     num_compat_to_self = 0
