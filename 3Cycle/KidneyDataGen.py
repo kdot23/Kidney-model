@@ -41,17 +41,20 @@ def getLKDPI(donor, recipient):
     donor_rec_HLA_B_mis = gen.gen_donor_rec_HLA_B_mis(0)
     donor_rec_HLA_DR_mis = gen.gen_donor_rec_HLA_DR_mis(0)
     weight_ratio = util.calculate_weight_ratio(donor.donor_weight, recipient.rec_weight)
-    LKDPI = util.calculate_lkdpi(donor.donor_age, donor.donor_afam, donor.donor_bmi, donor.donor_cig_use, \
+    return util.calculate_lkdpi(donor.donor_age, donor.donor_afam, donor.donor_bmi, donor.donor_cig_use, \
                                       donor.donor_sex, recipient.rec_sex, donor.donor_sbp, donor_rec_abo_comp, \
                                       0, donor.donor_egfr, donor_rec_HLA_B_mis, donor_rec_HLA_DR_mis, weight_ratio)
-
+matches = [0]*(T+K)
+for i in range(T+K):
+    matches[i] = [0]*(K+1)
+    for j in range(K+1):
+        matches[i][j] = [0]*(K+1)
+demo = [0]*(T+K)
 #starting the cycle with a compatible pair
 for i in range(T):
-    #matches.append([])
     matches[i][0][0] = util.calculate_survival(pool.compatiblePairs[i].LKDPI)
-    #demo.append([])
     demo[i] = generateDemo(pool.compatiblePairs[i])
-    for j in range(1,K+1):
+    for j in range(K):
         if compatible(pool.compatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.compatiblePairs[i]): 
             lkdpi_ic = getLKDPI(pool.incompatiblePairs[j], pool.compatiblePairs[i])
             if lkdpi_ic < pool.compatiblePairs[i].LKDPI:
@@ -61,7 +64,7 @@ for i in range(T):
                 matches[i][j][0] = 0
         else:
             matches[i][j][0] = 0
-        for k in range(1, K+1):
+        for k in range(K):
             #compatible[i] donates to incompatible[j] who donates to incompatible[k] who donates back to compatible[i]
             if compatible(pool.compatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[k]) \
             and compatible(pool.incompatiblePairs[k], pool.compatiblePairs[i]):
@@ -70,21 +73,21 @@ for i in range(T):
                 if lkdpi_ic < pool.compatiblePairs[i].LKDPI:                    
                     lkdpi_ii = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[k])
                     lkdpi_ci = getLKDPI(pool.compatiblePairs[i], pool.incompatiblePairs[j])
-                    matches[i][j][k] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ii) \
-                    + util.calculate_survival(lkdpi_ci)
+                    matches[i][j][k+1] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ii) + util.calculate_survival(lkdpi_ci)
                 else:
-                    matches[i][j][k] = 0
+                    matches[i][j][k+1] = 0
             else:
-                matches[i][j][k] = 0
+                matches[i][j][k+1] = 0
             
 
 
 for i in range(K):
+    matches.append([])
     matches[i+T][0][0]=0
     demo[i+T] = generateDemo(pool.incompatiblePairs[i])
-    for j in range(1,K+1):
+    for j in range(K):
         if i == j-1:
-            for k in range(1,K+1):
+            for k in range(K+1):
                 matches[i+T][j][k]=0
         else:
             if compatible(pool.incompatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[i]):
@@ -93,15 +96,15 @@ for i in range(K):
                 matches[i+T][j][0] = util.calculate_survival(lkdpi_1)+util.calculate_survival(lkdpi_2)
             else:
                 matches[i+T][j][0] = 0
-            for k in range(1,K+1):
+            for k in range(K):
                 if compatible(pool.incompatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[k]) \
                 and compatible(pool.incompatiblePairs[k], pool.compatiblePairs[i]):
                     lkdpi_1 = getLKDPI(pool.incompatiblePairs[i], pool.incompatiblePairs[j])
                     lkdpi_2 = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[k])
                     lkdpi_3 = getLKDPI(pool.incompatiblePairs[k], pool.incompatiblePairs[i])
-                    matches[i][j][k] = util.calculate_survival(lkdpi_1) + util.calculate_survival(lkdpi_2) + util.calculate_survival(lkdpi_3)
+                    matches[i][j][k+1] = util.calculate_survival(lkdpi_1) + util.calculate_survival(lkdpi_2) + util.calculate_survival(lkdpi_3)
                 else:
-                    matches[i][j][k] = 0
+                    matches[i][j][k+1] = 0
 
 with open(filename, 'w') as f:
     f.write(json.dumps((K,T,matches, demo)))

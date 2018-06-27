@@ -57,7 +57,7 @@ for d in data:
                      <= 1 for i in range(1,num_incompat+1)), "undirected graph")
 
     if (args.quality):
-        obj = quicksum(matchVars[t,i,j]*matches[t][i][t] for t in range(num_pairs) for i in range(num_incompat+1) for j in range(num_incompat+1)\
+        obj = quicksum(matchVars[t,i,j]*matches[t][i][j] for t in range(num_pairs) for i in range(num_incompat+1) for j in range(num_incompat+1)\
                        if (t,i,j) in matchVars)
     else:
         obj = quicksum(matchVars[t,i,j] for t in range(num_pairs) for i in range(num_incompat+1) for j in range(num_incompat+1) if (t,i,j) in matchVars)
