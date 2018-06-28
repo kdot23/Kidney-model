@@ -17,9 +17,6 @@ parser.add_argument('-o', '--output', default='data.csv')
 args=parser.parse_args()
 
 data = []
-for fn in args.inputFiles:
-    with open (fn, 'rb') as f:
-        data.append(pickle.load(f))
         
 def COUNT(v):
     if v[1] == 0:
@@ -28,7 +25,9 @@ def COUNT(v):
 
 pastData = []
 results = ''
-for d in data:    
+for fn in args.inputFiles:    
+    with open(fn, 'rb') as f:
+        d = pickle.load(f)
     num_incompat = d[0]
     num_compat = d[1]
     num_pairs = num_incompat + num_compat
@@ -37,7 +36,7 @@ for d in data:
     model = Model('Kideny Optimizer')
     matchVars = {}
     for v in matches:
-        matchVars[v] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub=1,  name = "match_" + str(v))
+        matchVars[v] = model.addVar(vtype = GRB.BINARY, lb = 0, ub=1,  name = "match_" + str(v))
     
     model.addConstrs((quicksum(matchVars[t,i] for i in range(num_incompat+1) if (t,i) in matchVars) <= 1 \
                       for t in range(1,num_pairs+1)), "Only match with one pair")
