@@ -74,6 +74,7 @@ for i in range(T):
                 matchesUndirected[i+1,j+T+1] = util.calculate_survival(lkdpi_ci)
                 matchesUndirected[j+T+1,i+1] = util.calculate_survival(lkdpi_ci)
         for k in range(K):
+            if j == k: continue
             #compatible[i] donates to incompatible[j] who donates to incompatible[k] who donates back to compatible[i]
             if compatible(pool.compatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[k]) \
             and compatible(pool.incompatiblePairs[k], pool.compatiblePairs[i]):
@@ -99,6 +100,7 @@ for i in range(K):
                 matchesUndirected[i+T+1,j+T+1] = util.calculate_survival(lkdpi_1)
                 matchesUndirected[j+T+1,i+T+1] = util.calculate_survival(lkdpi_2)
             for k in range(K):
+                if i == k or j == k: continue
                 if compatible(pool.incompatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[k]) \
                 and compatible(pool.incompatiblePairs[k], pool.compatiblePairs[i]):
                     lkdpi_1 = getLKDPI(pool.incompatiblePairs[i], pool.incompatiblePairs[j], misMatches[i+T+1,j+T+1][0], misMatches[i+T+1,j+T+1][1])
