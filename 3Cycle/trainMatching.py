@@ -104,7 +104,6 @@ for fn in args.testFiles:
     
     quality = 0
     count = 0
-    """
     for t in range(1,T+1):
         values = {(t, i, j):.1*random.random()+ matches[t,i,j] - beta[i] - beta[j] \
                   for i in beta for j in beta if (t,i,j) in matches}
@@ -115,8 +114,6 @@ for fn in args.testFiles:
             del beta[max_i[1]]
         if max_i[2] != 0:
             del beta[max_i[2]] 
-    print str(count) + "\t" + str(quality) +"\n"
-    """
     """
         if max_i != 0:
             count += 2
@@ -157,8 +154,6 @@ for fn in args.testFiles:
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
     for v in matchVars:
-        if matchVars[v].X != 0:
-            print str(v) + ' ' + str(matchVars[v].X)
         if round(matchVars[v].X) != 0:
             count += COUNT(v)
             quality += matches[v]

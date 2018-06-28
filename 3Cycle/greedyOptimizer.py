@@ -20,6 +20,13 @@ args=parser.parse_args()
 
 graph_colors = ["red", "blue", "green", "black"]
 
+def COUNT(v):
+    if v[2] != 0:
+        return 3
+    if v[1] != 0:
+        return 2
+    return 1
+
 def getBloodTypes(demo):
     bd,br=0,0
     if demo[0]:
@@ -40,15 +47,6 @@ def getBloodTypes(demo):
         bd = 3
     return br,bd
 
-def COUNT(v):
-    if v[1] == 0:
-        return 1
-    if v[2] == 0:
-        return 2
-    return 3
-
-
-data = []
 
 results = ''
 dataIndex = 0
@@ -64,6 +62,7 @@ for fn in args.inputFiles:
     demo = d[4]
     
     quality = 0
+    count = 0
     num_compat_to_self = 0
     num_compat_to_incompat = 0
     num_incompat_to_compat = 0
@@ -75,6 +74,7 @@ for fn in args.inputFiles:
     for i in range(1,num_compat+1):
         max_index = max((v for v in matches if v[0] == i and v[1] not in used_incompat and v[2] not in used_incompat), key=matches.get)
         quality += matches[max_index]
+        count += COUNT(max_index)
         if max_index[1] != 0:
             used_incompat.add(max_index[1])
         if max_index[2] != 0:
@@ -124,11 +124,10 @@ for fn in args.inputFiles:
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
     
-    quality += obj.getValue()/2
-    """
     for v in matchVars:
-        if matchVars[v].X != 0:
-            num_incompat_to_incompat += 1
+        if round(matchVars[v].X) != 0:
+            quality += matches[v]
+            count += COUNT(v)
             bt1 = getBloodTypes(demo[v[0] + T])
             bt2 = getBloodTypes(demo[v[1] + T])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
@@ -137,17 +136,15 @@ for fn in args.inputFiles:
             graph += "I" + str(v[0]) + " -> I" + str(v[1]) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "I" + str(v[1]) + " -> I" + str(v[0]) + ";\n"
-            """
     graph += "}"
     if args.graph:
         with open(args.graph+str(dataIndex)+".gv", 'w') as f:
             f.write(graph)
         os.system('dot -Tpdf ' + args.graph + str(dataIndex) + ".gv -o " + args.graph + str(dataIndex) +".pdf")
             
-    num_matches = num_compat_to_self + num_compat_to_incompat + num_incompat_to_compat + num_incompat_to_incompat
     dataIndex += 1
     
-    results += str(num_matches) + "\t" + str(quality) + "\n"
+    results += str(count) + "\t" + str(quality) + "\n"
 
 if args.output:
     with open(args.output, 'w') as f:
