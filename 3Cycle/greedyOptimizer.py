@@ -104,7 +104,7 @@ for fn in args.inputFiles:
     
     #gurobi optimization for remaining incompatible pairs
     model = Model('Kideny Optimizer')
-    matchVars = {v:model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub=1,  name = "incompat_match_" + str(v)) for v in matches if v[0] >= T and \
+    matchVars = {v:model.addVar(vtype = GRB.BINARY, lb = 0, ub=1,  name = "incompat_match_" + str(v)) for v in matches if v[0] > T and \
             v[0]-T not in used_incompat and v[1] not in used_incompat and v[2] not in used_incompat}
 
     model.addConstrs((quicksum(matchVars[t,i,j] for i in range(num_incompat+1) for j in range(num_incompat+1) if (t,i,j) in matchVars) <= 1 \
