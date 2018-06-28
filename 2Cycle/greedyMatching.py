@@ -60,6 +60,7 @@ for fn in args.inputFiles:
     demo = d[4]
     
     quality = 0
+    count = 0
     num_compat_to_self = 0
     num_compat_to_incompat = 0
     num_incompat_to_compat = 0
@@ -79,18 +80,16 @@ for fn in args.inputFiles:
         quality += matches[i][max_index]
         """
         quality += matches[i,max_index]
+        count += COUNT((i,max_index))
         if max_index != 0: 
             used_incompat.add(max_index)
         if max_index == 0:
-            num_compat_to_self += 1
             bt = getBloodTypes(demo[i-1])
             graph += "edge [color="+graph_colors[bt[1]] + "];\n"
             graph += "node [color="+graph_colors[bt[0]]+"];\n"
             graph += "C" + str(i) + " -> C" + str(i) + ";\n"
             
         else:
-            num_compat_to_incompat += 1
-            num_incompat_to_compat += 1
             bt1 = getBloodTypes(demo[i-1])
             bt2 = getBloodTypes(demo[max_index + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
@@ -126,8 +125,8 @@ for fn in args.inputFiles:
     model.optimize()
     
     for v in matchVars:
-        if matchVars[v].X != 0:
-            num_incompat_to_incompat += 2
+        if round(matchVars[v].X) != 0:
+            count += count(v)
             quality += matches[v]
             bt1 = getBloodTypes(demo[v[0]-1])
             bt2 = getBloodTypes(demo[v[1]+T-1])
@@ -143,9 +142,8 @@ for fn in args.inputFiles:
             f.write(graph)
         os.system('dot -Tpdf ' + args.graph + str(dataIndex) + ".gv -o " + args.graph + str(dataIndex) +".pdf")
             
-    num_matches = num_compat_to_self + num_compat_to_incompat + num_incompat_to_compat + num_incompat_to_incompat
     dataIndex += 1
-    results += str(num_matches) + "\t" + str(quality) + "\n"
+    results += str(count) + "\t" + str(quality) + "\n"
 
 if args.output:
     with open(args.output, 'w') as f:
