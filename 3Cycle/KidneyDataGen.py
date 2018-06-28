@@ -124,4 +124,4 @@ for i in range(K):
                     matches3C[i+T+1,j+1,k+1] = util.calculate_survival(lkdpi_1) + util.calculate_survival(lkdpi_2) + util.calculate_survival(lkdpi_3)
 
 with open(filename, 'wb') as f:
-    pickle.dump((K, T, matches2C, matches3C, demo, misMatches, matchesUndirected), f)
+    pickle.dump((K, T, matches2C, matches3C, demo, misMatches, matchesDirected), f)
