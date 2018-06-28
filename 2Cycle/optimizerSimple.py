@@ -4,6 +4,7 @@
 Takes a directory (default) or a single file of data and optimizes the model for count or quality.
 """
 import json
+import pickle
 import argparse
 from gurobipy import *
 import numpy as np
@@ -23,11 +24,10 @@ for fn in args.inputFiles:
 def COUNT(v):
     if v[1] == 0:
         return 1
-    if v[2] == 0:
-        return 2
-    return 3
+    return 2
 
 pastData = []
+results = ''
 for d in data:    
     num_incompat = d[0]
     num_compat = d[1]
@@ -40,10 +40,10 @@ for d in data:
         matchVars[v] = model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub=1,  name = "match_" + str(v))
     
     model.addConstrs((quicksum(matchVars[t,i] for i in range(num_incompat+1) if (t,i) in matchVars) <= 1 \
-                      for t in range(num_pairs)), "Only match with one pair")
+                      for t in range(1,num_pairs+1)), "Only match with one pair")
     
-    model.addConstrs((quicksum(matchVars[t,i] for t in range(num_pairs) if (t,i) in matchVars) + \
-                      quicksum(matchVars[i+T-1,j] for j in range(1,num_incompat+1) if (i+T-1,j) in matchVars) <= 1 \
+    model.addConstrs((quicksum(matchVars[t,i] for t in range(1,num_pairs+1) if (t,i) in matchVars) + \
+                      quicksum(matchVars[i+T,j] for j in range(1,num_incompat+1) if (i+T,j) in matchVars) <= 1 \
                       for i in range(1,num_incompat+1)), "undirected graph")
     if (args.quality):
         obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
