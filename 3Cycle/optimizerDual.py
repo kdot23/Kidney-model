@@ -5,8 +5,7 @@ import argparse
 import os
 
 parser = argparse.ArgumentParser(description="Computes the dual of our problem")
-parser.add_argument('-i', '--input', default = 'data/', help='input directory to use')
-parser.add_argument('--inputFile', help='input file to use, by default will use all files in directory')
+parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help='input file to use')
 parser.add_argument('-o', '--output', help='output file (json) to use. Includes demographic information and beta values')
 parser.add_argument('--quality', action = "store_true", help="Optimize for quality")
 
@@ -14,14 +13,10 @@ args = parser.parse_args()
 
 results = []
 data = []
-
-if args.inputFile:
-    with open(args.input+'/'+args.inputFile, 'rb') as f:
+    
+for fn in args.inputFiles:
+    with open (fn, 'rb') as f:
         data.append(pickle.load(f))
-else:
-    for fn in os.listdir(args.input):
-        with open(args.input+'/'+fn, 'rb') as f:
-            data.append(pickle.load(f))
 
 for d in data:
     #T is number of compatible pairs
