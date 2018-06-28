@@ -134,9 +134,9 @@ for fn in args.testFiles:
             if (t,i) in matches:
                 matchVars[(t,i)] = model.addVar(vtype = GRB.BINARY,  name = "match_" + str((t,i)))
     
-    model.addConstrs((quicksum(matchVars[t,i] for i in range(1,K+1) if (t,i) in matchVars) <= 1 for t in range(T,T+K)), "only match with one other pair")
-    model.addConstrs((quicksum(matchVars[t,i] for t in range(T,T+K) if (t,i) in matchVars) + quicksum(matchVars[i+T-1,j] for j in range(1, K+1) \
-                               if (i+T-1,j) in matchVars) <= 1 for i in range(1,K+1)), "symmetry")
+    model.addConstrs((quicksum(matchVars[t,i] for i in range(1,K+1) if (t,i) in matchVars) <= 1 for t in range(T,T+K+1)), "only match with one other pair")
+    model.addConstrs((quicksum(matchVars[t,i] for t in range(T,T+K+1) if (t,i) in matchVars) + quicksum(matchVars[i+T,j] for j in range(1, K+1) \
+                               if (i+T,j) in matchVars) <= 1 for i in range(1,K+1)), "symmetry")
     
     obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
     model.setObjective(obj, GRB.MAXIMIZE) 
@@ -156,6 +156,7 @@ for fn in args.testFiles:
             graph += "I" + str(v[1]-1) + " -> I" + str(v[0]-T) + ";\n"
             
     results += str(count) + "\t" + str(quality) +"\n"
+    print str(count) + "\t" + str(quality)
     graph += "}"
     if args.graph:
         with open(args.graph+str(dataIndex)+'.gv', 'w') as f:
