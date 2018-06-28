@@ -127,7 +127,7 @@ for fn in args.inputFiles:
     
     for v in matchVars:
         if matchVars[v].X != 0:
-            num_incompat_to_incompat += 1
+            num_incompat_to_incompat += 2
             quality += matches[v]
             bt1 = getBloodTypes(demo[v[0]-1])
             bt2 = getBloodTypes(demo[v[1]+T-1])

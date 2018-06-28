@@ -49,14 +49,13 @@ def COUNT(v):
 
 
 data = []
-for fn in args.inputFiles:
-    with open (fn, 'rb') as f:
-        data.append(pickle.load(f))
 
 results = ''
 dataIndex = 0
 
-for d in data:    
+for fn in args.inputFiles:
+    with open(fn, 'rb') as f:
+        d = pickle.load(f)
     num_incompat = d[0]
     num_compat = d[1]
     num_pairs = num_incompat + num_compat

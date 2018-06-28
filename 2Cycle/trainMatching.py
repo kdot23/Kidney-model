@@ -8,6 +8,7 @@ Output is csv format of optimal count and quality for the population.
 """
 import argparse
 import json
+import pickle
 from gurobipy import *
 import random
 from sklearn import linear_model
@@ -31,6 +32,11 @@ args = parser.parse_args()
 
 
 graph_colors = ["red", "blue", "green", "black"]
+
+def COUNT(v):
+    if v[1] == 0:
+        return 1
+    return 2
 
 def getBloodTypes(demo):
     bd,br=0,0
@@ -81,12 +87,12 @@ dataIndex = 0
 for fn in args.testFiles:
     
     with open(fn, 'r') as f:
-        data = json.load(f)
+        data = pickle.load(f)
 
     K = data[0]
     T = data[1]
     matches = data[2]
-    demo = data[3]
+    demo = data[4]
     
     testValues = [[demo[i][v] for v in varsUsed] for i in range(T,T+K)]
     X2 = poly.fit_transform(testValues)
@@ -96,25 +102,25 @@ for fn in args.testFiles:
     
     quality = 0
     count = 0
-    for t in range(T):
-        values = {i:.1*random.random()+ matches[t][i] - beta[i] for i in beta if matches[t][i] != 0}
+    for t in range(1,T+1):
+        values = {i:.1*random.random()+ matches[t,i] - beta[i] for i in beta if (t,i) in matches }
         max_i = max(values, key=values.get)
         if max_i != 0:
             count += 2
-            quality += matches[t][max_i]
+            quality += matches[t,max_i]
             del beta[max_i]
-            bt1 = getBloodTypes(demo[t])
+            bt1 = getBloodTypes(demo[t-1])
             bt2 = getBloodTypes(demo[max_i + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
             graph += "C" + str(t) + " [color="+graph_colors[bt1[0]]+"];\n"
-            graph += "I" + str(max_i-1) + " [color="+graph_colors[bt2[0]]+"];\n"
-            graph += "C" + str(t) + " -> I" + str(max_i-1) + ";\n"
+            graph += "I" + str(max_i) + " [color="+graph_colors[bt2[0]]+"];\n"
+            graph += "C" + str(t) + " -> I" + str(max_i) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
-            graph += "I" + str(max_i-1) + " -> C" + str(t) + ";\n"
+            graph += "I" + str(max_i) + " -> C" + str(t) + ";\n"
         else:
             count += 1
-            quality += matches[t][max_i]
-            bt = getBloodTypes(demo[t])
+            quality += matches[t,max_i]
+            bt = getBloodTypes(demo[t-1])
             graph += "edge [color="+graph_colors[bt[1]] + "];\n"
             graph += "node [color="+graph_colors[bt[0]]+"];\n"
             graph += "C" + str(t) + " -> C" + str(t) + ";\n"
@@ -122,24 +128,24 @@ for fn in args.testFiles:
     
     model = Model('Online Matching')
     matchVars = {}
-    for t in range(T,T+K):
-        if t-T+1 not in beta: continue
+    for t in range(T+1,T+K+1):
+        if t-T not in beta: continue
         for i in beta:
-            if matches[t][i] != 0:
+            if (t,i) in matches:
                 matchVars[(t,i)] = model.addVar(vtype = GRB.BINARY,  name = "match_" + str((t,i)))
     
     model.addConstrs((quicksum(matchVars[t,i] for i in range(1,K+1) if (t,i) in matchVars) <= 1 for t in range(T,T+K)), "only match with one other pair")
     model.addConstrs((quicksum(matchVars[t,i] for t in range(T,T+K) if (t,i) in matchVars) + quicksum(matchVars[i+T-1,j] for j in range(1, K+1) \
                                if (i+T-1,j) in matchVars) <= 1 for i in range(1,K+1)), "symmetry")
     
-    obj = quicksum(matchVars[v]*matches[v[0]][v[1]] for v in matchVars)
+    obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
     for v in matchVars:
         if matchVars[v].X != 0:
             count += 2
-            quality += matches[v[0]][v[1]]
-            bt1 = getBloodTypes(demo[v[0]])
+            quality += matches[v]
+            bt1 = getBloodTypes(demo[v[0]-1])
             bt2 = getBloodTypes(demo[v[1] + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
             graph += "I" + str(v[0]-T) + " [color="+graph_colors[bt1[0]]+"];\n"
