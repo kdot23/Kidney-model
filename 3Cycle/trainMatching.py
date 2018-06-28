@@ -147,7 +147,7 @@ for fn in args.testFiles:
                     matchVars[(t,i,j)] = model.addVar(vtype = GRB.BINARY,  name = "match_" + str((t,i,j)))
     
     model.addConstrs((quicksum(matchVars[t,i,j] for i in range(K+1) for j in range(K+1) if (t,i,j) in matchVars) <= 1 for t in range(T+K+1)), "only match with one other pair")
-    model.addConstrs((quicksum(matchVars[t,i,j] for t in range(T+K+1) for j in range(K+1) if (t,i,j) in matchVars) + quicksum(matchVars[t,j,i] for t in range(T+K+1) for j in range(K+1) if (t,j,i) in matchVars) + quicksum(matchVars[i+T,j,jp] for j in range(1, K+1) \
+    model.addConstrs((quicksum(matchVars[t,i,j] for t in range(T+K+1) for j in range(K+1) if (t,i,j) in matchVars) + quicksum(matchVars[t,j,i] for t in range(T+K+1) for j in range(K+1) if (t,j,i) in matchVars) + quicksum(matchVars[i+T,j,jp] for j in range(K+1) \
                                for jp in range(K+1) if (i+T,j,jp) in matchVars) <= 1 for i in range(1,K+1)), "symmetry")
     
     obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
