@@ -28,10 +28,24 @@ pool = BJCSensitivityPool(T, K)
 gen = DistributionGenerator()
 
 misMatches = {}
+positiveCrossMatches = {}
 for i in range(T+K):
     for j in range(T+K):
         if j < T and i < T: continue
         misMatches[i+1,j+1] = (gen.gen_donor_rec_HLA_B_mis(0), gen.gen_donor_rec_HLA_DR_mis(0))
+
+
+for t in pool.compatiblePairs:
+    for i in pool.incompatiblePairs:
+        positiveCrossMatches[t,i] = t.saidman.isPositiveCrossmatch(i.patientCPRA)
+        positiveCrossMatches[i,t] = i.saidman.isPositiveCrossmatch(t.patientCPRA)
+for i in pool.incompatiblePairs:
+    for j in pool.incompatiblePairs:
+        if i == j:
+            positiveCrossMatches[i,j] = True
+            continue
+        positiveCrossMatches[i,j] = i.saidman.isPositiveCrossmatch(j.patientCPRA)
+
 matchesUndirected = {}
 matches2C = {}
 matches3C = {}
@@ -46,7 +60,7 @@ def generateDemo(pair):
 
 def compatible(donor, recipient):
     return functions.are_blood_compatible(donor.bloodTypeDonor, recipient.bloodTypePatient) \
-                  and (not donor.saidman.isPositiveCrossmatch(recipient.patientCPRA))
+                  and (not positiveCrossMatches[donor, recipient])
 
 #returns the EGS using LKDPI and assuming the donor and recipient are NOT related
 def getLKDPI(donor, recipient, HLA_B_mis, HLA_DR_mis ):
@@ -74,7 +88,8 @@ for i in range(T):
                 matchesUndirected[i+1,j+T+1] = util.calculate_survival(lkdpi_ci)
                 matchesUndirected[j+T+1,i+1] = util.calculate_survival(lkdpi_ci)
         for k in range(K):
-            if j == k: continue
+            if j == k: 
+                continue
             #compatible[i] donates to incompatible[j] who donates to incompatible[k] who donates back to compatible[i]
             if compatible(pool.compatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[k]) \
             and compatible(pool.incompatiblePairs[k], pool.compatiblePairs[i]):
