@@ -21,6 +21,7 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('--trainFiles', nargs = "+", help = "List of files to train on")
 parser.add_argument('--testFiles', nargs = "+", help = "List of files to test")
+parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
 parser.add_argument('-d', '--degree', default=1, type=int, help='type of polynomial to use while training')
 parser.add_argument('-o', '--output', help = 'csv file to output count and quality to')
 parser.add_argument("-v", "--useVars", nargs = "+", type = int, default=[0, 1, 2, 3, 4, 5, 6, 7, 9, 11, 14, 15], \
@@ -94,6 +95,7 @@ for fn in args.testFiles:
     T = data[1]
     matches = data[2]
     demo = data[4]
+    directed_matches = data[6]
     
     testValues = [[demo[i][v] for v in varsUsed] for i in range(T,T+K)]
     X2 = poly.fit_transform(testValues)
@@ -108,26 +110,35 @@ for fn in args.testFiles:
             values = {i:.1*random.random()+ matches[t,i] - beta[i] for i in beta if (t,i) in matches }
         else:
             values = {i:.1*random.random()+COUNT((t,i)) - beta[i] for i in beta if (t,i) in matches}
-        max_i = max(values, key=values.get)
-        if max_i != 0:
+        max_index = max(values, key=values.get)
+        if max_index != 0:
             count += 2
-            quality += matches[t,max_i]
+            quality += matches[t,max_index]
             del beta[max_i]
             bt1 = getBloodTypes(demo[t-1])
-            bt2 = getBloodTypes(demo[max_i + T - 1])
+            bt2 = getBloodTypes(demo[max_index + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
             graph += "C" + str(t) + " [color="+graph_colors[bt1[0]]+"];\n"
-            graph += "I" + str(max_i) + " [color="+graph_colors[bt2[0]]+"];\n"
-            graph += "C" + str(t) + " -> I" + str(max_i) + ";\n"
+            graph += "I" + str(max_index) + " [color="+graph_colors[bt2[0]]+"];\n"
+            graph += "C" + str(t) + " -> I" + str(max_index) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
-            graph += "I" + str(max_i) + " -> C" + str(t) + ";\n"
+            graph += "I" + str(max_index) + " -> C" + str(t) + ";\n"
         else:
             count += 1
-            quality += matches[t,max_i]
+            quality += matches[t,max_index]
             bt = getBloodTypes(demo[t-1])
             graph += "edge [color="+graph_colors[bt[1]] + "];\n"
             graph += "node [color="+graph_colors[bt[0]]+"];\n"
             graph += "C" + str(t) + " -> C" + str(t) + ";\n"
+        
+        if max_index == 0:
+            agentInfo += "C" + str(t) + "\t" + str(t) + "\t" + str(directed_matches[t,0]) + "\t" \
+           + "C" + "\t" + str(directed_matches[t,0]) + "\t" + "C" + "\t" + str(0) + "\n"
+        elif max_index[2] == 0:
+            agentInfo += "C" + str(t) + "\t" + str(t) + "\t" + str(directed_matches[max_index+T,t]) + "\t" \
+           + "I" + "\t" + str(directed_matches[t,max_index+T]) + "\t" + "I" + "\t" + str(0) + "\n"
+            agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[t,max_index+T]) + "\t" \
+           + "C" + "\t" + str(directed_matches[max_index+T,t]) + "\t" + "C" + "\t" + str(beta[max_index]) + "\n"
     
     
     model = Model('Online Matching')
@@ -152,6 +163,11 @@ for fn in args.testFiles:
         if round(matchVars[v].X) != 0:
             count += COUNT(v)
             quality += matches[v]
+            agentInfo += "I" + str(v[0]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
+            + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(beta[v[0]-T]) + "\n"
+            agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+            + "I" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\n"
+     
             bt1 = getBloodTypes(demo[v[0]-1])
             bt2 = getBloodTypes(demo[v[1] + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
@@ -176,4 +192,6 @@ if args.output:
 else:
     print results
     
-    
+if args.agents:
+    with open(args.agents, 'w') as f:
+        f.write(agentInfo)   

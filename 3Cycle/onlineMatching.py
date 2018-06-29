@@ -63,7 +63,9 @@ def COUNT(v):
     return 3
 
 results = ''
-agentInfo = '' #Pair id, time of match, get quality, get donor type, give quality, give recipient type, beta value (0 for incompatible pair)
+agentInfo = '' 
+#Pair id, time of match, get quality, get donor type, give quality, give recipient type, beta value (0 for incompatible)
+#time of match = T+1 for incompatible pairs matched at the end
 graph = "digraph G {\n"
 varsUsed = args.useVars
 data = []
@@ -90,7 +92,6 @@ LR.fit(X, labels)
 
 dataIndex = 0
 for fn in args.testFiles:
-    print fn
     with open(fn, 'r') as f:
         data = pickle.load(f)
 
@@ -116,19 +117,19 @@ for fn in args.testFiles:
         quality += matches[max_index]
         
         if max_index[1] == 0:
-            agentInfo += "C" + str(i) + "\t" + str(i) + "\t" + str(directed_matches[max_index[0],0]) + "\t" \
+            agentInfo += "C" + str(t) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],0]) + "\t" \
            + "C" + "\t" + str(directed_matches[max_index[0],0]) + "\t" + "C" + "\t" + str(0) + "\n"
         elif max_index[2] == 0:
-            agentInfo += "C" + str(i) + "\t" + str(i) + "\t" + str(directed_matches[max_index[1]+T,max_index[0]]) + "\t" \
+            agentInfo += "C" + str(t) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+T,max_index[0]]) + "\t" \
            + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" + "I" + "\t" + str(0) + "\n"
-            agentInfo += "I" + str(max_index[1]) + "\t" + str(i) + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" \
+            agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" \
            + "C" + "\t" + str(directed_matches[max_index[1]+T,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[1]]) + "\n"
         else:
-            agentInfo += "C" + str(i) + "\t" + str(i) + "\t" + str(directed_matches[max_index[2]+T,max_index[0]]) + "\t" \
+            agentInfo += "C" + str(t) + "\t" + str(t) + "\t" + str(directed_matches[max_index[2]+T,max_index[0]]) + "\t" \
            + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" + "I" + "\t" + str(0) +  "\n"
-            agentInfo += "I" + str(max_index[1]) + "\t" + str(i) + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" \
+            agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" \
            + "C" + "\t" + str(directed_matches[max_index[1]+T,max_index[2]+T]) + "\t" + "I" + "\t" + str(beta[max_index[1]]) + "\n"
-            agentInfo += "I" + str(max_index[2]) + "\t" + str(i) + "\t" + str(directed_matches[max_index[1]+T,max_index[2]+T]) + "\t" \
+            agentInfo += "I" + str(max_index[2]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+T,max_index[2]+T]) + "\t" \
            + "I" + "\t" + str(directed_matches[max_index[2]+T,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[2]]) + "\n"
 
         if max_index[1] != 0:
@@ -190,7 +191,7 @@ for fn in args.testFiles:
             else:
                  print v
                  agentInfo += "I" + str(v[0]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" \
-               + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(beta[v[0]]) + "\n"
+               + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(beta[v[0]-T]) + "\n"
                  agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
                + "I" + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\n"
                  agentInfo += "I" + str(v[2]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" \
@@ -221,4 +222,7 @@ if args.output:
 else:
     print results
     
-    
+if args.agents:
+    with open(args.agents, 'w') as f:
+        f.write(agentInfo)
+       

@@ -138,6 +138,20 @@ for fn in args.inputFiles:
         if round(matchVars[v].X) != 0:
             quality += matches[v]
             count += COUNT(v)
+            if v[2] == 0:
+                 agentInfo += "I" + str(v[0]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
+               + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
+                 agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+               + "I" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\n"
+            else:
+                 print v
+                 agentInfo += "I" + str(v[0]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" \
+               + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
+                 agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+               + "I" + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" + "I" + "\n"
+                 agentInfo += "I" + str(v[2]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" \
+               + "I" + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" + "I" + "\n"
+               
             bt1 = getBloodTypes(demo[v[0]-1])
             bt2 = getBloodTypes(demo[v[1] + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
