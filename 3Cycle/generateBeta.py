@@ -11,19 +11,23 @@ parser.add_argument('--quality', action = "store_true", help="Optimize for quali
 
 args = parser.parse_args()
 
+def COUNT(v):
+    if v[2] != 0:
+        return 3
+    if v[1] != 0:
+        return 2
+    return 1
+
 results = []
-
-data = []
+    
 for fn in args.inputFiles:
-    with open (fn, 'rb') as f:
-        data.append(pickle.load(f))
-
-for d in data:
+    with open(fn, 'rb') as f:
+        d = pickle.load(f)
     #T is number of compatible pairs
     T = d[0]
     #K is number of incompatible pairs
     K = d[1]
-    matches = d[2]
+    matches = d[3]
     demo = d[4]
     
     model = Model("Dual Optimizer")
@@ -38,16 +42,19 @@ for d in data:
     for i in range(1,K+1):
         if any(k[0] == i+T for k in matches):
             beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
-        if any(k[1] == i for k in matches):
+        elif any(k[1] == i for k in matches):
             beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
+        elif any(k[2] == i for k in matches):
+            beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
+
     beta[0] = 0
     
     if args.quality:
-        model.addConstrs((matches[t,i] - alpha[t] - beta[i] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta  \
-                if (t,i) in matches), "something...")
+        model.addConstrs((matches[t,i,j] - alpha[t] - beta[i] - beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta  \
+                 for j in beta if (t,i,j) in matches), "something...")
     else:
-        model.addConstrs((1 - alpha[t] - beta[i] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta \
-                if (t,i) in matches), "something...")
+        model.addConstrs((COUNT((t,i,j)) - alpha[t] - beta[i] - beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta \
+                for j in beta if (t,i,j) in matches), "something...")
     
     obj = quicksum(alpha[t] for t in alpha) + quicksum(beta[i] for i in beta)
     model.setObjective(obj, GRB.MINIMIZE)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+import json
 import pickle
 import argparse
 from gurobipy import *
@@ -13,6 +14,7 @@ parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="Lis
                     and demographic information. File created in KidneyDataGen")
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
 parser.add_argument('-o', '--output', help='write results to this file (.csv)')
+parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
 parser.add_argument("-n", type = int, default = 2, help = "max number of connections incompatibles can be matched to and still removed from pool")
 parser.add_argument("--graph", help = "output a graphviz representation")
 args=parser.parse_args()
@@ -20,7 +22,9 @@ args=parser.parse_args()
 graph_colors = ["red", "blue", "green", "black"]
 
 def COUNT(v):
-    if v[1] == 0:
+    if v[2] != 0:
+        return 3
+    if v[1] != 0:
         return 2
     return 1
 
@@ -46,20 +50,22 @@ def getBloodTypes(demo):
 
 
 results = ''
+agentQuality = ''
 dataIndex = 0
 
-for fn in args.inputFiles:    
+for fn in args.inputFiles:
     with open(fn, 'rb') as f:
         d = pickle.load(f)
     num_incompat = d[0]
     num_compat = d[1]
     num_pairs = num_incompat + num_compat
-    matches = d[2]
+    matches = d[3]
+    directed_matches = d[6]
     T = num_compat
-    K = num_incompat
     demo = d[4]
     
     quality = 0
+    count = 0
     num_compat_to_self = 0
     num_compat_to_incompat = 0
     num_incompat_to_compat = 0
@@ -69,87 +75,104 @@ for fn in args.inputFiles:
     #greedy algorithm for compatible pairs by order of index
     used_incompat = set()
     for i in range(1,num_compat+1):
-        values = {j:matches[i,j] for j in range(K+1) if (i,j) in matches and j not in used_incompat}
-        max_index = max(values, key=values.get)
-        """
-        for j in range(1,num_incompat+1):
-            if matches[i,j] > matches[i][max_index] and j not in used_incompat and \
-            sum(k>0 and k not in used_incompat for k in matches[i+T-1]) < args.n:
-                max_index = j
-        quality += matches[i][max_index]
-        """
-        quality += matches[i,max_index]
-        if max_index != 0: 
-            used_incompat.add(max_index)
-        if max_index == 0:
+        max_index = max((v for v in matches if v[0] == i and v[1] not in used_incompat and v[2] not in used_incompat), key=matches.get)
+        quality += matches[max_index]
+
+        count += COUNT(max_index)
+        if max_index[1] != 0:
+            used_incompat.add(max_index[1])
+        if max_index[2] != 0:
+            used_incompat.add(max_index[2])
+        
+        if max_index[1] == 0:
+            agentQuality += "C" + "\t" + str(directed_matches[max_index[0],0]) + "\n"
             num_compat_to_self += 1
-            bt = getBloodTypes(demo[i-1])
+            bt = getBloodTypes(demo[i])
             graph += "edge [color="+graph_colors[bt[1]] + "];\n"
             graph += "node [color="+graph_colors[bt[0]]+"];\n"
             graph += "C" + str(i) + " -> C" + str(i) + ";\n"
             
-        else:
+        elif max_index[2] == 0:
+            agentQuality += "CI" + "\t" + str(directed_matches[max_index[0], max_index[1]]) + "\n"
+            agentQuality += "IC" + "\t" + str(directed_matches[max_index[1],max_index[0]]) + "\n"
             num_compat_to_incompat += 1
             num_incompat_to_compat += 1
-            bt1 = getBloodTypes(demo[i-1])
-            bt2 = getBloodTypes(demo[max_index + T - 1])
+            bt1 = getBloodTypes(demo[i])
+            bt2 = getBloodTypes(demo[max_index[1] + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
             graph += "C" + str(i) + " [color="+graph_colors[bt1[0]]+"];\n"
-            graph += "I" + str(max_index) + " [color="+graph_colors[bt2[0]]+"];\n"
-            graph += "C" + str(i) + " -> I" + str(max_index) + ";\n"
+            graph += "I" + str(max_index[1]-1) + " [color="+graph_colors[bt2[0]]+"];\n"
+            graph += "C" + str(i) + " -> I" + str(max_index[1]-1) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
-            graph += "I" + str(max_index) + " -> C" + str(i) + ";\n"
+            graph += "I" + str(max_index[1]-1) + " -> C" + str(i) + ";\n"
+
+        else:
+            print str(max_index)
+            print str(len(directed_matches) ) + "\n"
+           # print len(directed_matches[0])
+            agentQuality += "CI" + "\t" + str(directed_matches[max_index[0],max_index[1]]) + "\n"
+            agentQuality += "II" + "\t" + str(directed_matches[max_index[1],max_index[2]]) + "\n"
+            agentQuality += "IC" + "\t" + str(directed_matches[max_index[2],max_index[0]]) + "\n"
+            num_compat_to_incompat += 1
+            num_incompat_to_incompat += 1
+            num_incompat_to_compat += 1
     
     #gurobi optimization for remaining incompatible pairs
     model = Model('Kideny Optimizer')
-    matchVars = {}
-    for i in range(K):
-        if i+1 in used_incompat: continue
-        for j in range(K):
-            if j+1 not in used_incompat and (i+T+1,j+1) in matches:
-                matchVars[i+T+1,j+1] = model.addVar(vtype=GRB.BINARY, lb=0, ub=1, name=str((i+T+1,j+1)))
-            
-        
+    matchVars = {v:model.addVar(vtype = GRB.BINARY, lb = 0, ub=1,  name = "incompat_match_" + str(v)) for v in matches if v[0] > T and \
+            v[0]-T not in used_incompat and v[1] not in used_incompat and v[2] not in used_incompat}
+
+    model.addConstrs((quicksum(matchVars[t,i,j] for i in range(num_incompat+1) for j in range(num_incompat+1) if (t,i,j) in matchVars) <= 1 \
+                      for t in range(1,num_pairs+1)), "Only match with one pair")
     
-    model.addConstrs((quicksum(matchVars[i,j] for j in range(num_incompat+1) if (i,j) in matchVars) <= 1 \
-                      for i in range(T+1,K+T+1)), "Only match with one pair")
-    
-    model.addConstrs((quicksum(matchVars[t,i] for t in range(1,T+K+1) if (t,i) in matchVars) + quicksum(matchVars[i+T,j] for j in range(1,K+1) \
-            if (i+T,j) in matchVars) <= 1 for i in range(1,K+1)), "Symetry")
+    model.addConstrs((quicksum(matchVars[t,i,j] for t in range(1,num_pairs+1) for j in range(num_incompat+1) if (t,i,j) in matchVars) \
+                     + quicksum(matchVars[t,j,i] for t in range(1,num_pairs+1) for j in range(1, num_incompat+1) if (t,j,i) in matchVars)\
+                     + quicksum(matchVars[i+T,j,jp] for j in range(1,num_incompat+1) for jp in range(num_incompat+1) if (i+T,j,jp) in matchVars)\
+                     <= 1 for i in range(1,num_incompat+1)), "undirected graph")
 
     if (args.quality):
-        obj = quicksum(matchVars[i,j]*matches[i,j] for i in range(T+1,T+K+1) for j in range(1,K+1) if (i,j) in matchVars)
+        obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
     else:
-        obj = quicksum(COUNT((i,j))*matchVars[i,j] for i in range(T+1,T+K+1) for j in range(1,num_incompat+1) if (i,j) in matchVars)
-        
+        obj = quicksum(COUNT(v)*matchVars[v] for v in matchVars)
+
+
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
     
+
     for v in matchVars:
-        if matchVars[v].X != 0:
-            num_incompat_to_incompat += 2
+        if round(matchVars[v].X) != 0:
             quality += matches[v]
+            count += COUNT(v)
             bt1 = getBloodTypes(demo[v[0]-1])
-            bt2 = getBloodTypes(demo[v[1]+T-1])
+            bt2 = getBloodTypes(demo[v[1] + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
             graph += "I" + str(v[0]) + " [color="+graph_colors[bt1[0]]+"];\n"
             graph += "I" + str(v[1]) + " [color="+graph_colors[bt2[0]]+"];\n"
             graph += "I" + str(v[0]) + " -> I" + str(v[1]) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "I" + str(v[1]) + " -> I" + str(v[0]) + ";\n"
+
+
+
     graph += "}"
     if args.graph:
         with open(args.graph+str(dataIndex)+".gv", 'w') as f:
             f.write(graph)
         os.system('dot -Tpdf ' + args.graph + str(dataIndex) + ".gv -o " + args.graph + str(dataIndex) +".pdf")
             
-    num_matches = num_compat_to_self + num_compat_to_incompat + num_incompat_to_compat + num_incompat_to_incompat
     dataIndex += 1
-    results += str(num_matches) + "\t" + str(quality) + "\n"
+    
+    results += str(count) + "\t" + str(quality) + "\n"
 
 if args.output:
     with open(args.output, 'w') as f:
         f.write(results)
+        
 else:
     print results
+
+if args.agents:
+    with open(args.agents, 'w') as f:
+        f.write(agentQuality)
     
