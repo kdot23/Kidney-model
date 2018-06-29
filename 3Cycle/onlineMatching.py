@@ -21,14 +21,15 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('--trainFiles', nargs = "+", help = "List of files to train on")
 parser.add_argument('--testFiles', nargs = "+", help = "List of files to test")
-parser.add_argument('-d', '--degree', default=1, type=int, help='type of polynomial to use while training')
 parser.add_argument('-o', '--output', help = 'csv file to output count and quality to')
-parser.add_argument("-v", "--useVars", nargs = "+", type = int, default=[0, 1, 2, 3, 4, 5, 6, 7, 9, 11, 14, 15], \
+parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
+parser.add_argument("-v", "--useVars", nargs = "+", type = int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], \
                     help = "List of variables")
 parser.add_argument('--quality', action='store_true', help='Flag should be present if optimization is being done for quality')
 parser.add_argument('--forestRegression', nargs='?', const=10, type=int, \
         help='Flag should be present if forest regression is to be used instead of Linear, optional argument of number of trees')
 parser.add_argument('--graph', help='stem of output file for graph')
+parser.add_argument('-d', '--degree', default=1, type=int, help='type of polynomial to use while training')
 args = parser.parse_args()
 
 
@@ -62,6 +63,7 @@ def COUNT(v):
     return 3
 
 results = ''
+agentInfo = '' #Pair id, time of match, get quality, get donor type, give quality, give recipient type, beta value (0 for incompatible pair)
 graph = "digraph G {\n"
 varsUsed = args.useVars
 data = []
@@ -96,6 +98,7 @@ for fn in args.testFiles:
     T = data[1]
     matches = data[3]
     demo = data[4]
+    directed_matches = data[6]
     
     testValues = [[demo[i][v] for v in varsUsed] for i in range(T,T+K)]
     X2 = poly.fit_transform(testValues)
@@ -108,13 +111,31 @@ for fn in args.testFiles:
     for t in range(1,T+1):
         values = {(t, i, j):.1*random.random()+ matches[t,i,j] - beta[i] - beta[j] \
                   for i in beta for j in beta if (t,i,j) in matches}
-        max_i = max(values, key=values.get)
-        count += COUNT(max_i)
-        quality += matches[max_i]
-        if max_i[1] != 0:
-            del beta[max_i[1]]
-        if max_i[2] != 0:
-            del beta[max_i[2]] 
+        max_index = max(values, key=values.get)
+        count += COUNT(max_index)
+        quality += matches[max_index]
+        
+        if max_index[1] == 0:
+            agentInfo += "C" + str(i) + "\t" + str(i) + "\t" + str(directed_matches[max_index[0],0]) + "\t" \
+           + "C" + "\t" + str(directed_matches[max_index[0],0]) + "\t" + "C" + "\t" + str(0) + "\n"
+        elif max_index[2] == 0:
+            agentInfo += "C" + str(i) + "\t" + str(i) + "\t" + str(directed_matches[max_index[1]+T,max_index[0]]) + "\t" \
+           + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" + "I" + "\t" + str(0) + "\n"
+            agentInfo += "I" + str(max_index[1]) + "\t" + str(i) + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" \
+           + "C" + "\t" + str(directed_matches[max_index[1]+T,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[1]]) + "\n"
+        else:
+            agentInfo += "C" + str(i) + "\t" + str(i) + "\t" + str(directed_matches[max_index[2]+T,max_index[0]]) + "\t" \
+           + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" + "I" + "\t" + str(0) +  "\n"
+            agentInfo += "I" + str(max_index[1]) + "\t" + str(i) + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" \
+           + "C" + "\t" + str(directed_matches[max_index[1]+T,max_index[2]+T]) + "\t" + "I" + "\t" + str(beta[max_index[1]]) + "\n"
+            agentInfo += "I" + str(max_index[2]) + "\t" + str(i) + "\t" + str(directed_matches[max_index[1]+T,max_index[2]+T]) + "\t" \
+           + "I" + "\t" + str(directed_matches[max_index[2]+T,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[2]]) + "\n"
+
+        if max_index[1] != 0:
+            del beta[max_index[1]]
+        if max_index[2] != 0:
+            del beta[max_index[2]] 
+
     """
         if max_i != 0:
             count += 2
@@ -161,6 +182,20 @@ for fn in args.testFiles:
         if round(matchVars[v].X) != 0:
             count += COUNT(v)
             quality += matches[v]
+            if v[2] == 0:
+                 agentInfo += "I" + str(v[0]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
+               + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(beta[v[0]-T]) + "\n"
+                 agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+               + "I" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\n"
+            else:
+                 print v
+                 agentInfo += "I" + str(v[0]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" \
+               + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(beta[v[0]]) + "\n"
+                 agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+               + "I" + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\n"
+                 agentInfo += "I" + str(v[2]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" \
+               + "I" + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" + "I" + "\t" + str(beta[v[2]]) + "\n"
+               
             bt1 = getBloodTypes(demo[v[0]-1])
             bt2 = getBloodTypes(demo[v[1] + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"

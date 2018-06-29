@@ -120,7 +120,7 @@ for i in range(K):
         for k in range(K):
             if i == k or j == k: continue
             if compatible(pool.incompatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[k]) \
-            and compatible(pool.incompatiblePairs[k], pool.compatiblePairs[i]):
+            and compatible(pool.incompatiblePairs[k], pool.incompatiblePairs[i]):
                 lkdpi_1 = getLKDPI(pool.incompatiblePairs[i], pool.incompatiblePairs[j], misMatches[i+T+1,j+T+1][0], misMatches[i+T+1,j+T+1][1])
                 lkdpi_2 = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[k], misMatches[j+T+1,k+T+1][0], misMatches[j+T+1,k+T+1][1])
                 lkdpi_3 = getLKDPI(pool.incompatiblePairs[k], pool.incompatiblePairs[i], misMatches[k+T+1,i+T+1][0], misMatches[k+T+1,i+T+1][1])

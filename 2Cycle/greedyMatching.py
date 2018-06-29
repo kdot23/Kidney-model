@@ -13,6 +13,7 @@ parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="Lis
                     and demographic information. File created in KidneyDataGen")
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
 parser.add_argument('-o', '--output', help='write results to this file (.csv)')
+parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
 parser.add_argument("-n", type = int, default = 2, help = "max number of connections incompatibles can be matched to and still removed from pool")
 parser.add_argument("--graph", help = "output a graphviz representation")
 args=parser.parse_args()
@@ -46,6 +47,7 @@ def getBloodTypes(demo):
 
 
 results = ''
+agentInfo = ''
 dataIndex = 0
 
 for fn in args.inputFiles:    
@@ -58,38 +60,35 @@ for fn in args.inputFiles:
     T = num_compat
     K = num_incompat
     demo = d[4]
+    directed_matches = d[6]
     
     quality = 0
     count = 0
-    num_compat_to_self = 0
-    num_compat_to_incompat = 0
-    num_incompat_to_compat = 0
-    num_incompat_to_incompat = 0
-    
+
     graph = "digraph G { \n"
     #greedy algorithm for compatible pairs by order of index
     used_incompat = set()
     for i in range(1,num_compat+1):
         values = {j:matches[i,j] for j in range(K+1) if (i,j) in matches and j not in used_incompat}
         max_index = max(values, key=values.get)
-        """
-        for j in range(1,num_incompat+1):
-            if matches[i,j] > matches[i][max_index] and j not in used_incompat and \
-            sum(k>0 and k not in used_incompat for k in matches[i+T-1]) < args.n:
-                max_index = j
-        quality += matches[i][max_index]
-        """
+
         quality += matches[i,max_index]
         count += COUNT((i,max_index))
         if max_index != 0: 
             used_incompat.add(max_index)
         if max_index == 0:
+            agentInfo += "C" + str(i) + "\t" + str(i) + "\t" + str(directed_matches[i,0]) + "\t" \
+           + "C" + "\t" + str(directed_matches[i,0]) + "\t" + "C" + "\n"
             bt = getBloodTypes(demo[i-1])
             graph += "edge [color="+graph_colors[bt[1]] + "];\n"
             graph += "node [color="+graph_colors[bt[0]]+"];\n"
             graph += "C" + str(i) + " -> C" + str(i) + ";\n"
             
         else:
+            agentInfo += "C" + str(i) + "\t" + str(i) + "\t" + str(directed_matches[max_index+T,i]) + "\t" \
+           + "I" + "\t" + str(directed_matches[i,max_index+T]) + "\t" + "I" + "\n"
+            agentInfo += "I" + str(max_index) + "\t" + str(i) + "\t" + str(directed_matches[i,max_index+T]) + "\t" \
+           + "C" + "\t" + str(directed_matches[max_index+T,i]) + "\t" + "C" + "\n"
             bt1 = getBloodTypes(demo[i-1])
             bt2 = getBloodTypes(demo[max_index + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
@@ -151,3 +150,6 @@ if args.output:
 else:
     print results
     
+if args.agents:
+    with open(args.agents, 'w') as f:
+        f.write(agentInfo)

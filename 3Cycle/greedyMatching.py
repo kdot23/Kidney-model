@@ -50,7 +50,7 @@ def getBloodTypes(demo):
 
 
 results = ''
-agentQuality = ''
+agentInfo = '' #Pair id, time of match, get quality, get donor type, give quality, give recipient type
 dataIndex = 0
 
 for fn in args.inputFiles:
@@ -66,10 +66,6 @@ for fn in args.inputFiles:
     
     quality = 0
     count = 0
-    num_compat_to_self = 0
-    num_compat_to_incompat = 0
-    num_incompat_to_compat = 0
-    num_incompat_to_incompat = 0
     
     graph = "digraph G { \n"
     #greedy algorithm for compatible pairs by order of index
@@ -85,18 +81,19 @@ for fn in args.inputFiles:
             used_incompat.add(max_index[2])
         
         if max_index[1] == 0:
-            agentQuality += "C" + "\t" + str(directed_matches[max_index[0],0]) + "\n"
-            num_compat_to_self += 1
+            agentInfo += "C" + str(i) + "\t" + str(i) + "\t" + str(directed_matches[max_index[0],0]) + "\t" \
+           + "C" + "\t" + str(directed_matches[max_index[0],0]) + "\t" + "C" + "\n"
             bt = getBloodTypes(demo[i])
             graph += "edge [color="+graph_colors[bt[1]] + "];\n"
             graph += "node [color="+graph_colors[bt[0]]+"];\n"
             graph += "C" + str(i) + " -> C" + str(i) + ";\n"
             
         elif max_index[2] == 0:
-            agentQuality += "CI" + "\t" + str(directed_matches[max_index[0], (max_index[1] + T)]) + "\n"
-            agentQuality += "IC" + "\t" + str(directed_matches[max_index[1]+T, (max_index[0])]) + "\n"
-            num_compat_to_incompat += 1
-            num_incompat_to_compat += 1
+            agentInfo += "C" + str(i) + "\t" + str(i) + "\t" + str(directed_matches[max_index[1]+T,max_index[0]]) + "\t" \
+           + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" + "I" + "\n"
+            agentInfo += "I" + str(max_index[1]) + "\t" + str(i) + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" \
+           + "C" + "\t" + str(directed_matches[max_index[1]+T,max_index[0]]) + "\t" + "C" + "\n"
+           
             bt1 = getBloodTypes(demo[i])
             bt2 = getBloodTypes(demo[max_index[1] + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
@@ -107,16 +104,13 @@ for fn in args.inputFiles:
             graph += "I" + str(max_index[1]-1) + " -> C" + str(i) + ";\n"
 
         else:
-            print str(max_index)
-            print str(len(directed_matches) ) + "\n"
-           # print len(directed_matches[0])
-            agentQuality += "CI" + "\t" + str(directed_matches[max_index[0],(max_index[1]+T)]) + "\n"
-            agentQuality += "II" + "\t" + str(directed_matches[max_index[1]+T,(max_index[2]+T)]) + "\n"
-            agentQuality += "IC" + "\t" + str(directed_matches[max_index[2]+T,(max_index[0])]) + "\n"
-            num_compat_to_incompat += 1
-            num_incompat_to_incompat += 1
-            num_incompat_to_compat += 1
-    
+            agentInfo += "C" + str(i) + "\t" + str(i) + "\t" + str(directed_matches[max_index[2]+T,max_index[0]]) + "\t" \
+           + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" + "I" + "\n"
+            agentInfo += "I" + str(max_index[1]) + "\t" + str(i) + "\t" + str(directed_matches[max_index[0],max_index[1]+T]) + "\t" \
+           + "C" + "\t" + str(directed_matches[max_index[1]+T,max_index[2]+T]) + "\t" + "I" + "\n"
+            agentInfo += "I" + str(max_index[2]) + "\t" + str(i) + "\t" + str(directed_matches[max_index[1]+T,max_index[2]+T]) + "\t" \
+           + "I" + "\t" + str(directed_matches[max_index[2]+T,max_index[0]]) + "\t" + "C" + "\n"
+        
     #gurobi optimization for remaining incompatible pairs
     model = Model('Kideny Optimizer')
     matchVars = {v:model.addVar(vtype = GRB.BINARY, lb = 0, ub=1,  name = "incompat_match_" + str(v)) for v in matches if v[0] > T and \
@@ -174,5 +168,5 @@ else:
 
 if args.agents:
     with open(args.agents, 'w') as f:
-        f.write(agentQuality)
+        f.write(agentInfo)
     
