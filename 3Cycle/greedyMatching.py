@@ -93,8 +93,8 @@ for fn in args.inputFiles:
             graph += "C" + str(i) + " -> C" + str(i) + ";\n"
             
         elif max_index[2] == 0:
-            agentQuality += "CI" + "\t" + str(directed_matches[max_index[0], max_index[1]]) + "\n"
-            agentQuality += "IC" + "\t" + str(directed_matches[max_index[1],max_index[0]]) + "\n"
+            agentQuality += "CI" + "\t" + str(directed_matches[max_index[0], (max_index[1] + T)]) + "\n"
+            agentQuality += "IC" + "\t" + str(directed_matches[max_index[1], (max_index[0] + T)]) + "\n"
             num_compat_to_incompat += 1
             num_incompat_to_compat += 1
             bt1 = getBloodTypes(demo[i])
@@ -110,9 +110,9 @@ for fn in args.inputFiles:
             print str(max_index)
             print str(len(directed_matches) ) + "\n"
            # print len(directed_matches[0])
-            agentQuality += "CI" + "\t" + str(directed_matches[max_index[0],max_index[1]]) + "\n"
-            agentQuality += "II" + "\t" + str(directed_matches[max_index[1],max_index[2]]) + "\n"
-            agentQuality += "IC" + "\t" + str(directed_matches[max_index[2],max_index[0]]) + "\n"
+            agentQuality += "CI" + "\t" + str(directed_matches[max_index[0],(max_index[1]+T)]) + "\n"
+            agentQuality += "II" + "\t" + str(directed_matches[max_index[1],(max_index[2]+T)]) + "\n"
+            agentQuality += "IC" + "\t" + str(directed_matches[max_index[2],(max_index[0]+T)]) + "\n"
             num_compat_to_incompat += 1
             num_incompat_to_incompat += 1
             num_incompat_to_compat += 1
