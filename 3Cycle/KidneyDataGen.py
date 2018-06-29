@@ -75,7 +75,7 @@ demo = [0]*(T+K)
 for i in range(T):
     matches2C[i+1,0] = util.calculate_survival(pool.compatiblePairs[i].LKDPI)
     matches3C[i+1,0,0] = util.calculate_survival(pool.compatiblePairs[i].LKDPI)
-    matchesUndirected[i+1,0] = util.calculate_survival(pool.compatiblePairs[i].LKDPI)
+    matchesDirected[i+1,0] = util.calculate_survival(pool.compatiblePairs[i].LKDPI)
     demo[i] = generateDemo(pool.compatiblePairs[i])
     for j in range(K):
         if compatible(pool.compatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.compatiblePairs[i]): 
@@ -85,8 +85,8 @@ for i in range(T):
                 lkdpi_ci = getLKDPI(pool.compatiblePairs[i], pool.incompatiblePairs[j], misMatches[i+1,j+T+1][0], misMatches[i+1,j+T+1][1])
                 matches2C[i+1,j+1] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ci)
                 matches3C[i+1,j+1,0] = util.calculate_survival(lkdpi_ic) + util.calculate_survival(lkdpi_ci)
-                matchesUndirected[i+1,j+T+1] = util.calculate_survival(lkdpi_ci)
-                matchesUndirected[j+T+1,i+1] = util.calculate_survival(lkdpi_ci)
+                matchesDirected[i+1,j+T+1] = util.calculate_survival(lkdpi_ci)
+                matchesDirected[j+T+1,i+1] = util.calculate_survival(lkdpi_ci)
         for k in range(K):
             if j == k: 
                 continue
@@ -112,8 +112,8 @@ for i in range(K):
                 lkdpi_2 = getLKDPI(pool.incompatiblePairs[j], pool.incompatiblePairs[i], misMatches[j+T+1,i+T+1][0], misMatches[j+T+1,i+T+1][1])
                 matches2C[i+T+1,j+1] = util.calculate_survival(lkdpi_1)+util.calculate_survival(lkdpi_2)
                 matches3C[i+T+1,j+1,0] = util.calculate_survival(lkdpi_1)+util.calculate_survival(lkdpi_2)
-                matchesUndirected[i+T+1,j+T+1] = util.calculate_survival(lkdpi_1)
-                matchesUndirected[j+T+1,i+T+1] = util.calculate_survival(lkdpi_2)
+                matchesDirected[i+T+1,j+T+1] = util.calculate_survival(lkdpi_1)
+                matchesDirected[j+T+1,i+T+1] = util.calculate_survival(lkdpi_2)
             for k in range(K):
                 if i == k or j == k: continue
                 if compatible(pool.incompatiblePairs[i], pool.incompatiblePairs[j]) and compatible(pool.incompatiblePairs[j], pool.incompatiblePairs[k]) \

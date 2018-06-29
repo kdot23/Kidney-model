@@ -14,6 +14,7 @@ parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="Lis
                     and demographic information. File created in KidneyDataGen")
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
 parser.add_argument('-o', '--output', help='write results to this file (.csv)')
+parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
 parser.add_argument("-n", type = int, default = 2, help = "max number of connections incompatibles can be matched to and still removed from pool")
 parser.add_argument("--graph", help = "output a graphviz representation")
 args=parser.parse_args()
@@ -51,6 +52,7 @@ def COUNT(v):
 data = []
 
 results = ''
+agentQuality = ''
 dataIndex = 0
 
 for fn in args.inputFiles:
@@ -60,6 +62,7 @@ for fn in args.inputFiles:
     num_compat = d[1]
     num_pairs = num_incompat + num_compat
     matches = d[3]
+    directed_matches = d[6]
     T = num_compat
     demo = d[4]
     
@@ -75,11 +78,14 @@ for fn in args.inputFiles:
     for i in range(1,num_compat+1):
         max_index = max((v for v in matches if v[0] == i and v[1] not in used_incompat and v[2] not in used_incompat), key=matches.get)
         quality += matches[max_index]
+
         if max_index[1] != 0:
             used_incompat.add(max_index[1])
         if max_index[2] != 0:
             used_incompat.add(max_index[2])
+        
         if max_index[1] == 0:
+            agentQuality += "C" + "\t" + str(directed_matches[max_index[0],0]) + "\n"
             num_compat_to_self += 1
             bt = getBloodTypes(demo[i])
             graph += "edge [color="+graph_colors[bt[1]] + "];\n"
@@ -87,6 +93,8 @@ for fn in args.inputFiles:
             graph += "C" + str(i) + " -> C" + str(i) + ";\n"
             
         elif max_index[2] == 0:
+            agentQuality += "CI" + "\t" + str(directed_matches[max_index[0], max_index[1]]) + "\n"
+            agentQuality += "IC" + "\t" + str(directed_matches[max_index[1],max_index[0]]) + "\n"
             num_compat_to_incompat += 1
             num_incompat_to_compat += 1
             bt1 = getBloodTypes(demo[i])
@@ -97,14 +105,21 @@ for fn in args.inputFiles:
             graph += "C" + str(i) + " -> I" + str(max_index[1]-1) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "I" + str(max_index[1]-1) + " -> C" + str(i) + ";\n"
+
         else:
+            print str(max_index)
+            print str(len(directed_matches) ) + "\n"
+           # print len(directed_matches[0])
+            agentQuality += "CI" + "\t" + str(directed_matches[max_index[0],max_index[1]]) + "\n"
+            agentQuality += "II" + "\t" + str(directed_matches[max_index[1],max_index[2]]) + "\n"
+            agentQuality += "IC" + "\t" + str(directed_matches[max_index[2],max_index[0]]) + "\n"
             num_compat_to_incompat += 1
             num_incompat_to_incompat += 1
             num_incompat_to_compat += 1
     
     #gurobi optimization for remaining incompatible pairs
     model = Model('Kideny Optimizer')
-    matchVars = {v:model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub=1,  name = "incompat_match_" + str(v)) for v in matches if v[0] >= T and \
+    matchVars = {v:model.addVar(vtype = GRB.CONTINUOUS, lb = 0, ub=1,  name = "incompat_match_" + str(v)) for v in matches if v[0] > T and \
             v[0]-T not in used_incompat and v[1] not in used_incompat and v[2] not in used_incompat}
 
     model.addConstrs((quicksum(matchVars[t,i,j] for i in range(num_incompat+1) for j in range(num_incompat+1) if (t,i,j) in matchVars) <= 1 \
@@ -124,10 +139,12 @@ for fn in args.inputFiles:
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
     
-    quality += obj.getValue()/2
-    """
+    quality += sum(matchVars[v].X*matches[v] for v in matchVars)
+    count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
+    
     for v in matchVars:
         if matchVars[v].X != 0:
+            
             num_incompat_to_incompat += 1
             bt1 = getBloodTypes(demo[v[0] + T])
             bt2 = getBloodTypes(demo[v[1] + T])
@@ -137,7 +154,7 @@ for fn in args.inputFiles:
             graph += "I" + str(v[0]) + " -> I" + str(v[1]) + ";\n"
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "I" + str(v[1]) + " -> I" + str(v[0]) + ";\n"
-            """
+            
     graph += "}"
     if args.graph:
         with open(args.graph+str(dataIndex)+".gv", 'w') as f:
@@ -152,6 +169,11 @@ for fn in args.inputFiles:
 if args.output:
     with open(args.output, 'w') as f:
         f.write(results)
+        
 else:
     print results
+
+if args.agents:
+    with open(args.agents, 'w') as f:
+        f.write(agentQuality)
     
