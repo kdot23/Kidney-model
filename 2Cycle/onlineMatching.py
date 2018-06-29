@@ -104,7 +104,10 @@ for fn in args.testFiles:
     quality = 0
     count = 0
     for t in range(1,T+1):
-        values = {i:.1*random.random()+ matches[t,i] - beta[i] for i in beta if (t,i) in matches }
+        if args.quality: 
+            values = {i:.1*random.random()+ matches[t,i] - beta[i] for i in beta if (t,i) in matches }
+        else:
+            values = {i:.1*random.random()+COUNT((t,i)) - beta[i] for i in beta if (t,i) in matches}
         max_i = max(values, key=values.get)
         if max_i != 0:
             count += 2
@@ -142,7 +145,7 @@ for fn in args.testFiles:
     if args.quality:
         obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
     else:
-        obj = quicksum(matchVars[v]*COUNT[v] for v in matchVars)
+        obj = quicksum(matchVars[v]*COUNT(v) for v in matchVars)
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
     for v in matchVars:

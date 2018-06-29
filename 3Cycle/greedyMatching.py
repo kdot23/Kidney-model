@@ -128,8 +128,8 @@ for fn in args.inputFiles:
         if round(matchVars[v].X) != 0:
             quality += matches[v]
             count += COUNT(v)
-            bt1 = getBloodTypes(demo[v[0] + T])
-            bt2 = getBloodTypes(demo[v[1] + T])
+            bt1 = getBloodTypes(demo[v[0]-1])
+            bt2 = getBloodTypes(demo[v[1] + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
             graph += "I" + str(v[0]) + " [color="+graph_colors[bt1[0]]+"];\n"
             graph += "I" + str(v[1]) + " [color="+graph_colors[bt2[0]]+"];\n"
