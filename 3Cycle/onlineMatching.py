@@ -184,18 +184,24 @@ for fn in args.testFiles:
             count += COUNT(v)
             quality += matches[v]
             if v[2] == 0:
-                 agentInfo += "I" + str(v[0]-T) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
+                agentInfo += "I" + str(v[0]-T) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
                + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(beta[v[0]-T]) + "\n"
-                 agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+                agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
                + "I" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\n"
+                del beta[v[0]-T]
+                del beta[v[1]]
             else:
-                 print v
-                 agentInfo += "I" + str(v[0]-T) + "\t" + str(T+1) + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" \
+                print v
+                agentInfo += "I" + str(v[0]-T) + "\t" + str(T+1) + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" \
                + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(beta[v[0]-T]) + "\n"
-                 agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+                agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
                + "I" + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\n"
-                 agentInfo += "I" + str(v[2]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" \
+                agentInfo += "I" + str(v[2]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" \
                + "I" + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" + "I" + "\t" + str(beta[v[2]]) + "\n"
+                del beta[v[0]-T]
+                del beta[v[1]]
+                del beta[v[2]]
+
                
             bt1 = getBloodTypes(demo[v[0]-1])
             bt2 = getBloodTypes(demo[v[1] + T - 1])
@@ -206,6 +212,10 @@ for fn in args.testFiles:
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "node [color="+graph_colors[bt2[0]]+"];\n"
             graph += "I" + str(v[1]-1) + " -> I" + str(v[0]-T) + ";\n"
+    for i in beta:
+        agentInfo += "I" + str(i) + "\t" + str(T+2) + "\t" + str(0) + "\t" \
+        + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(beta[i]) + "\n"
+
             
     results += str(count) + "\t" + str(quality) +"\n"
     print str(count) + "\t" + str(quality) +"\n"

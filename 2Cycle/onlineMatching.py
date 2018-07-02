@@ -178,7 +178,13 @@ for fn in args.testFiles:
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "node [color="+graph_colors[bt2[0]]+"];\n"
             graph += "I" + str(v[1]-1) + " -> I" + str(v[0]-T) + ";\n"
+            del beta[v[0]-T]
+            del beta[v[1]]
             
+    for i in beta:
+        agentInfo += "I" + str(i) + "\t" + str(T+2) + "\t" + str(0) + "\t" \
+        + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(beta[i]) + "\n"
+
     results += str(count) + "\t" + str(quality) +"\n"
     graph += "}"
     if args.graph:
