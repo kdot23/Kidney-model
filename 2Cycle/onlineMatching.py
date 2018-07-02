@@ -86,6 +86,7 @@ else:
 LR.fit(X, labels)
 
 dataIndex = 0
+agentInfo = ''
 for fn in args.testFiles:
     
     with open(fn, 'r') as f:
@@ -111,10 +112,19 @@ for fn in args.testFiles:
         else:
             values = {i:.1*random.random()+COUNT((t,i)) - beta[i] for i in beta if (t,i) in matches}
         max_index = max(values, key=values.get)
+        
+        if max_index == 0:
+            agentInfo += "C" + str(t) + "\t" + str(t) + "\t" + str(directed_matches[t,0]) + "\t" \
+           + "C" + "\t" + str(directed_matches[t,0]) + "\t" + "C" + "\t" + str(0) + "\n"
+        else:
+            agentInfo += "C" + str(t) + "\t" + str(t) + "\t" + str(directed_matches[max_index+T,t]) + "\t" \
+           + "I" + "\t" + str(directed_matches[t,max_index+T]) + "\t" + "I" + "\t" + str(0) + "\n"
+            agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[t,max_index+T]) + "\t" \
+           + "C" + "\t" + str(directed_matches[max_index+T,t]) + "\t" + "C" + "\t" + str(beta[max_index]) + "\n"
         if max_index != 0:
             count += 2
             quality += matches[t,max_index]
-            del beta[max_i]
+            del beta[max_index]
             bt1 = getBloodTypes(demo[t-1])
             bt2 = getBloodTypes(demo[max_index + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"
@@ -130,15 +140,6 @@ for fn in args.testFiles:
             graph += "edge [color="+graph_colors[bt[1]] + "];\n"
             graph += "node [color="+graph_colors[bt[0]]+"];\n"
             graph += "C" + str(t) + " -> C" + str(t) + ";\n"
-        
-        if max_index == 0:
-            agentInfo += "C" + str(t) + "\t" + str(t) + "\t" + str(directed_matches[t,0]) + "\t" \
-           + "C" + "\t" + str(directed_matches[t,0]) + "\t" + "C" + "\t" + str(0) + "\n"
-        elif max_index[2] == 0:
-            agentInfo += "C" + str(t) + "\t" + str(t) + "\t" + str(directed_matches[max_index+T,t]) + "\t" \
-           + "I" + "\t" + str(directed_matches[t,max_index+T]) + "\t" + "I" + "\t" + str(0) + "\n"
-            agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[t,max_index+T]) + "\t" \
-           + "C" + "\t" + str(directed_matches[max_index+T,t]) + "\t" + "C" + "\t" + str(beta[max_index]) + "\n"
     
     
     model = Model('Online Matching')
@@ -163,7 +164,7 @@ for fn in args.testFiles:
         if round(matchVars[v].X) != 0:
             count += COUNT(v)
             quality += matches[v]
-            agentInfo += "I" + str(v[0]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
+            agentInfo += "I" + str(v[0]-T) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
             + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(beta[v[0]-T]) + "\n"
             agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
             + "I" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\n"
