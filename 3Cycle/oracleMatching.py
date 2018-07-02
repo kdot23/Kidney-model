@@ -22,6 +22,7 @@ parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="lis
                     incompatible pairs, number of compatible pairs, and list of all possible pairs with donor, recipient, egs")
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
 parser.add_argument('-o', '--output')
+parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
 parser.add_argument('--incompatibleOnly', action = 'store_true', help = "Run the oracle on only the incompatible pairs")
 args=parser.parse_args()
 
@@ -35,6 +36,7 @@ def COUNT(v):
     return 3
 
 results = ''
+agentInfo = ''
 for fn in args.inputFiles:
     with open(fn, 'rb') as f:
         d = pickle.load(f)
@@ -42,10 +44,12 @@ for fn in args.inputFiles:
     num_compat = d[1]
     num_pairs = num_incompat + num_compat
     matches = d[3]
+    directed_matches = d[6]
     T = num_compat
     model = Model('Kideny Optimizer')
     matchVars = {}
     for v in matches:
+        print v
         if args.incompatibleOnly and v[0] <= T: continue
         matchVars[v] = model.addVar(vtype = GRB.BINARY, lb = 0, ub=1,  name = "match_" + str(v))
     
@@ -76,8 +80,53 @@ for fn in args.inputFiles:
     
     results += str(count) + "\t" + str(quality) + "\n"
 
+    for v in matchVars:
+        if round(matchVars[v].X) != 0:
+            #if there is a compatible pair in the match
+            if (v[0] <= T):
+                #if compatible matched with itself
+                if (v[1] == 0):
+                    agentInfo += "C" + str(v[0]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],0]) + "\t" \
+                    + "C" + "\t" + str(directed_matches[v[0],0]) + "\t" + "C" + "\n"
+                #compatible and incompatible
+                elif (v[2] == 0):
+                    agentInfo += "C" + str(v[0]) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
+                    agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+                    + "C" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "C" + "\n"
+                #compatible and 2 incompatible
+                else:
+                     agentInfo += "C" + str(v[0]) + "\t" + str(0) + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
+                     agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+                    + "C" + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" + "I" + "\n"
+                     agentInfo += "I" + str(v[2]) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" + "C" + "\n"
+                  
+            #only incompatible pairs
+            else:
+                #2 cycle
+                if (v[2]==0):
+                    agentInfo += "I" + str(v[0]-T) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
+                    agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\n"  
+                #3 cycle
+                else:
+                    agentInfo += "I" + str(v[0]-T) + "\t" + str(0) + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
+                    agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" + "I" + "\n"
+                    agentInfo += "I" + str(v[2]) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" + "I" + "\n"
+
+
 if args.output:
     with open(args.output, 'w') as f:
         f.write(results)
 else:
     print results
+
+if args.agents:
+    with open(args.agents, 'w') as f:
+        f.write(agentInfo)

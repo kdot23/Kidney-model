@@ -15,7 +15,7 @@ parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="lis
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
 parser.add_argument('-o', '--output')
 parser.add_argument('--incompatibleOnly', action = 'store_true', help = "Run the oracle on only the incompatible pairs")
-
+parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
 args=parser.parse_args()
 
 data = []
@@ -27,6 +27,7 @@ def COUNT(v):
 
 pastData = []
 results = ''
+agentInfo = ''
 for fn in args.inputFiles:    
     with open(fn, 'rb') as f:
         d = pickle.load(f)
@@ -34,6 +35,7 @@ for fn in args.inputFiles:
     num_compat = d[1]
     num_pairs = num_incompat + num_compat
     matches = d[2]
+    directed_matches = d[6]
     T = num_compat
     model = Model('Kideny Optimizer')
     matchVars = {}
@@ -54,7 +56,28 @@ for fn in args.inputFiles:
   
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
-            
+    for v in matchVars:
+        if round(matchVars[v].X) != 0:
+            #if there is a compatible pair in the match
+            if (v[0] <= T):
+                #if compatible matched with itself
+                if (v[1] == 0):
+                    agentInfo += "C" + str(v[0]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],0]) + "\t" \
+                    + "C" + "\t" + str(directed_matches[v[0],0]) + "\t" + "C" + "\n"
+                #compatible and incompatible
+                else:
+                    agentInfo += "C" + str(v[0]) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
+                    agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+                    + "C" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "C" + "\n"
+            #incompatible and incompatible
+            else:
+                agentInfo += "I" + str(v[0]-T) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
+                + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
+                agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+                + "I" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\n"                
+                
+                
     quality = sum(matchVars[v].X*matches[v] for v in matchVars)
     count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
     
@@ -65,3 +88,7 @@ if args.output:
         f.write(results)
 else:
     print results
+
+if args.agents:
+    with open(args.agents, 'w') as f:
+        f.write(agentInfo)   
