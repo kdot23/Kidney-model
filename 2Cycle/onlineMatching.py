@@ -162,8 +162,6 @@ for fn in args.testFiles:
     model.optimize()
     for v in matchVars:
         if round(matchVars[v].X) != 0:
-            count += COUNT(v)
-            quality += matches[v]
             agentInfo += "I" + str(v[0]-T) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
             + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(beta[v[0]-T]) + "\n"
             agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
@@ -184,6 +182,13 @@ for fn in args.testFiles:
     for i in beta:
         agentInfo += "I" + str(i) + "\t" + str(T+2) + "\t" + str(0) + "\t" \
         + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(beta[i]) + "\n"
+    
+    if (args.incompatibleOnly):
+        quality = sum(matchVars[v].X*matches[v] for v in matchVars) + sum(matches[(v,0)] for v in range(T))
+        count = sum(COUNT(v)*matchVars[v].X for v in matchVars) + T
+    else:
+        quality = sum(matchVars[v].X*matches[v] for v in matchVars)
+        count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
 
     results += str(count) + "\t" + str(quality) +"\n"
     graph += "}"
