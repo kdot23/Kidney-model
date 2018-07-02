@@ -13,7 +13,9 @@ parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by
 parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="list of .dat files to be used as input. List of number of \
                     incompatible pairs, number of compatible pairs, and list of all possible pairs with donor, recipient, egs")
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
-parser.add_argument('-o', '--output', default='data.csv')
+parser.add_argument('-o', '--output')
+parser.add_argument('--incompatibleOnly', action = 'store_true', help = "Run the oracle on only the incompatible pairs")
+
 args=parser.parse_args()
 
 data = []
@@ -36,6 +38,7 @@ for fn in args.inputFiles:
     model = Model('Kideny Optimizer')
     matchVars = {}
     for v in matches:
+        if args.incompatibleOnly and v[0] <= T: continue
         matchVars[v] = model.addVar(vtype = GRB.BINARY, lb = 0, ub=1,  name = "match_" + str(v))
     
     model.addConstrs((quicksum(matchVars[t,i] for i in range(num_incompat+1) if (t,i) in matchVars) <= 1 \
