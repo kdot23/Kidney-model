@@ -191,7 +191,6 @@ for fn in args.testFiles:
                 del beta[v[0]-T]
                 del beta[v[1]]
             else:
-                print v
                 agentInfo += "I" + str(v[0]-T) + "\t" + str(T+1) + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" \
                + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(beta[v[0]-T]) + "\n"
                 agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
@@ -218,7 +217,6 @@ for fn in args.testFiles:
 
             
     results += str(count) + "\t" + str(quality) +"\n"
-    print str(count) + "\t" + str(quality) +"\n"
     graph += "}"
     if args.graph:
         with open(args.graph+str(dataIndex)+'.gv', 'w') as f:
