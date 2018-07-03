@@ -138,13 +138,15 @@ for fn in args.inputFiles:
         if round(matchVars[v].X) != 0:
             quality += matches[v]
             count += COUNT(v)
+            used_incompat.add(v[0]-T)
+            used_incompat.add(v[1])
             if v[2] == 0:
                  agentInfo += "I" + str(v[0]-T) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
                + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
                  agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
                + "I" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\n"
             else:
-                 print v
+                 used_incompat.add(v[2])
                  agentInfo += "I" + str(v[0]-T) + "\t" + str(T+1) + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" \
                + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
                  agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
@@ -161,7 +163,10 @@ for fn in args.inputFiles:
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "I" + str(v[1]) + " -> I" + str(v[0]) + ";\n"
 
-
+    for i in range(1,num_incompat+1):
+        if i not in used_incompat:
+             agentInfo += "I" + str(i) + "\t" + str(T+2) + "\t" + str(0) + "\t" \
+        + "N" + "\t" + str(0) + "\t" + "N" + "\n"
 
     graph += "}"
     if args.graph:
