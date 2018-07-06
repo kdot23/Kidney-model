@@ -56,7 +56,8 @@ for fn in args.inputFiles:
   
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
-            
+    
+    used_incompat = set()      
     for v in matchVars:
         if round(matchVars[v].X) != 0:
             #if there is a compatible pair in the match
@@ -67,12 +68,15 @@ for fn in args.inputFiles:
                     + "C" + "\t" + str(directed_matches[v[0],0]) + "\t" + "C" + "\n"
                 #compatible and incompatible
                 else:
+                    used_incompat.add(v[1])
                     agentInfo += "C" + str(v[0]) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
                     + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
                     agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
                     + "C" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "C" + "\n"
             #incompatible and incompatible
             else:
+                used_incompat.add(v[0])
+                used_incompat.add(v[1])
                 agentInfo += "I" + str(v[0]-T) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
                 + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
                 agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
@@ -85,6 +89,11 @@ for fn in args.inputFiles:
     else:
         quality = sum(matchVars[v].X*matches[v] for v in matchVars)
         count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
+    
+    for i in range(num_incompat):
+        if i not in used_incompat:
+            agentInfo += "I" + str(i) + "\t" + str(52) + "\t" + str(0) + "\t" \
+                + "N" + "\t" + str(0) + "\t" + "N" + "\n"
     
     results += str(count) + "\t" + str(quality) + "\n"
 
