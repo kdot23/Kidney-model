@@ -72,7 +72,7 @@ for fn in args.inputFiles:
     model.optimize()
     
     if (args.incompatibleOnly):
-        quality = sum(matchVars[v].X*matches[v] for v in matchVars) + sum(matches[(v,0,0)] for v in range(num_compat))
+        quality = sum(matchVars[v].X*matches[v] for v in matchVars) + sum(matches[(v,0,0)] for v in range(1,num_compat+1))
         count = sum(COUNT(v)*matchVars[v].X for v in matchVars) + num_compat
     else:
         quality = sum(matchVars[v].X*matches[v] for v in matchVars)

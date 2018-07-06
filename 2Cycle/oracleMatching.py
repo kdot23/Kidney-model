@@ -56,6 +56,7 @@ for fn in args.inputFiles:
   
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
+            
     for v in matchVars:
         if round(matchVars[v].X) != 0:
             #if there is a compatible pair in the match
@@ -78,8 +79,12 @@ for fn in args.inputFiles:
                 + "I" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\n"                
                 
                 
-    quality = sum(matchVars[v].X*matches[v] for v in matchVars)
-    count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
+    if args.incompatibleOnly:
+        quality = sum(matchVars[v].X*matches[v] for v in matchVars) + sum(matches[t,0] for t in range(1,T+1))
+        count = sum(COUNT(v)*matchVars[v].X for v in matchVars) + T
+    else:
+        quality = sum(matchVars[v].X*matches[v] for v in matchVars)
+        count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
     
     results += str(count) + "\t" + str(quality) + "\n"
 
