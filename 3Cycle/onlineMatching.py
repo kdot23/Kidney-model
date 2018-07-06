@@ -105,12 +105,11 @@ for fn in args.testFiles:
     X2 = poly.fit_transform(testValues)
     betaList = LR.predict(X2)
     beta = {i+1:betaList[i] for i in range(len(betaList))}
-    """
-    FOR CAPPING
+
+    #FOR CAPPING
     for i in beta:
         if beta[i] < 0:
-            betaList[i] = 0  
-    """
+            beta[i] = 0  
     beta[0] = 0
     
     quality = 0
