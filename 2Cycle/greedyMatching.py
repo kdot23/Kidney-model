@@ -128,6 +128,10 @@ for fn in args.inputFiles:
         if round(matchVars[v].X) != 0:
             count += COUNT(v)
             quality += matches[v]
+            agentInfo += "I" + str(v[0]-T) + "\t" + str(T+1) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
+            + "N" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
+            agentInfo += "I" + str(v[1]) + "\t" + str(T+1) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+            + "N" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\n"
             used_incompat.add(v[0]-T)
             used_incompat.add(v[1])
             bt1 = getBloodTypes(demo[v[0]-1])
@@ -147,9 +151,9 @@ for fn in args.inputFiles:
     dataIndex += 1
     results += str(count) + "\t" + str(quality) + "\n"
     for i in range(1,num_incompat+1):
-    if i not in used_incompat:
-         agentInfo += "I" + str(i) + "\t" + str(T+2) + "\t" + str(0) + "\t" \
-    + "N" + "\t" + str(0) + "\t" + "N" + "\n"
+        if i not in used_incompat:
+            agentInfo += "I" + str(i) + "\t" + str(T+2) + "\t" + str(0) + "\t" \
+            + "N" + "\t" + str(0) + "\t" + "N" + "\n"
 
 if args.output:
     with open(args.output, 'w') as f:

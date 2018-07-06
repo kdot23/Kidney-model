@@ -49,7 +49,6 @@ for fn in args.inputFiles:
     model = Model('Kideny Optimizer')
     matchVars = {}
     for v in matches:
-        print v
         if args.incompatibleOnly and v[0] <= T: continue
         matchVars[v] = model.addVar(vtype = GRB.BINARY, lb = 0, ub=1,  name = "match_" + str(v))
     
