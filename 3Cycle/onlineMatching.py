@@ -105,6 +105,12 @@ for fn in args.testFiles:
     X2 = poly.fit_transform(testValues)
     betaList = LR.predict(X2)
     beta = {i+1:betaList[i] for i in range(len(betaList))}
+    """
+    FOR CAPPING
+    for i in beta:
+        if beta[i] < 0:
+            betaList[i] = 0  
+    """
     beta[0] = 0
     
     quality = 0
@@ -211,6 +217,7 @@ for fn in args.testFiles:
             graph += "edge [color="+graph_colors[bt2[1]] + "];\n"
             graph += "node [color="+graph_colors[bt2[0]]+"];\n"
             graph += "I" + str(v[1]-1) + " -> I" + str(v[0]-T) + ";\n"
+    del beta[0]
     for i in beta:
         agentInfo += "I" + str(i) + "\t" + str(T+2) + "\t" + str(0) + "\t" \
         + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(beta[i]) + "\n"
