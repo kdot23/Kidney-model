@@ -58,7 +58,29 @@ boxplot(fmatched[which(fmatched$betaCat == '<5'), ]$time,
         fmatched[which(fmatched$betaCat == '>20'), ]$time, 
         main = "Time Matched With Compatible", xlab = "Beta Value", ylab = "Time",
         names= c("<5","5-10","10-15","15-20", ">20"))
-
+library(readr)
+online <- read_delim("~/Documents/Kidney-model/3Cycle/results/agentsAndDemoOnline.csv", 
+                     "\t", escape_double = FALSE, col_names = FALSE, 
+                     trim_ws = TRUE)
+View(online)
+colnames(online)= c("id","time","get_quality","get_type","give_quality", "give_type", "beta", 
+                    "blood_patient_o", "blood_patient_a", "blood_patient_b", "blood_patient_ab", 
+                    "blood_donor_o", "blood_donor_a", "blood_donor_b", "blood_donor_ab", "donor_afam", 
+                    "donor_age", "donor_sex", "donor_cig", "rec_sex", "donor_weight", "rec_weight", 
+                    "donor_bmi", "donor_eGFR", "donor_sbp","rec_pra")
+greedy <- read_delim("~/Documents/Kidney-model/3Cycle/results/agentsAndDemoGreedy.csv", 
+                                  "\t", escape_double = FALSE, col_names = FALSE, 
+                                  trim_ws = TRUE)
+View(greedy)
+colnames(greedy)= c("id","time","get_quality","get_type","give_quality", "give_type",
+                    "blood_patient_o", "blood_patient_a", "blood_patient_b", "blood_patient_ab", 
+                    "blood_donor_o", "blood_donor_a", "blood_donor_b", "blood_donor_ab", "donor_afam", 
+                    "donor_age", "donor_sex", "donor_cig", "rec_sex", "donor_weight", "rec_weight", 
+                    "donor_bmi", "donor_eGFR", "donor_sbp","rec_pra")
+highPRA = subset(incompat, incompat$rec_pra == .9)
+medPRA = subset(incompat, incompat$rec_pra == .45)
+lowPRA = subset(incompat, incompat$rec_pra == .05)
+boxplot(lowPRA$beta, medPRA$beta, highPRA$beta, names = c("low", "med","high"), ylab ="beta")
 """
 greedyc = subset(agentsGreedy50, grepl("C", id))
 greedyi = subset(agentsGreedy50, grepl("I", id))
