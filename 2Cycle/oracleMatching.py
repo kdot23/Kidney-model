@@ -75,7 +75,7 @@ for fn in args.inputFiles:
                     + "C" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "C" + "\n"
             #incompatible and incompatible
             else:
-                used_incompat.add(v[0])
+                used_incompat.add(v[0]-T)
                 used_incompat.add(v[1])
                 agentInfo += "I" + str(v[0]-T) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
                 + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
@@ -90,7 +90,7 @@ for fn in args.inputFiles:
         quality = sum(matchVars[v].X*matches[v] for v in matchVars)
         count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
     
-    for i in range(num_incompat):
+    for i in range(1,num_incompat+1):
         if i not in used_incompat:
             agentInfo += "I" + str(i) + "\t" + str(52) + "\t" + str(0) + "\t" \
                 + "N" + "\t" + str(0) + "\t" + "N" + "\n"
