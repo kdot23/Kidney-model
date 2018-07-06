@@ -37,14 +37,14 @@ for i in range(T+K):
 
 for t in pool.compatiblePairs:
     for i in pool.incompatiblePairs:
-        positiveCrossMatches[t,i] = t.saidman.isPositiveCrossmatch(i.patientCPRA)
-        positiveCrossMatches[i,t] = i.saidman.isPositiveCrossmatch(t.patientCPRA)
+        positiveCrossMatches[t,i] = t.saidman.isPositiveCrossmatch(i.pr_PraIncompatiblity)
+        positiveCrossMatches[i,t] = i.saidman.isPositiveCrossmatch(t.pr_PraIncompatiblity)
 for i in pool.incompatiblePairs:
     for j in pool.incompatiblePairs:
         if i == j:
             positiveCrossMatches[i,j] = True
             continue
-        positiveCrossMatches[i,j] = i.saidman.isPositiveCrossmatch(j.patientCPRA)
+        positiveCrossMatches[i,j] = i.saidman.isPositiveCrossmatch(j.pr_PraIncompatiblity)
 
 matchesDirected = {}
 matches2C = {}
@@ -56,7 +56,7 @@ def generateDemo(pair):
          int(pair.bloodTypePatient == 3 ), int(pair.bloodTypeDonor == 0 ), int(pair.bloodTypeDonor == 1 ), \
          int(pair.bloodTypeDonor == 2 ), int(pair.bloodTypeDonor == 3 ), pair.donor_afam, pair.donor_age, \
          pair.donor_sex[0], pair.donor_cig_use[0], pair.rec_sex[0], pair.donor_weight, pair.rec_weight, \
-         pair.donor_bmi, pair.donor_egfr, pair.donor_sbp, pair.patientCPRA)
+         pair.donor_bmi, pair.donor_egfr, pair.donor_sbp, pair.pr_PraIncompatiblity)
 
 def compatible(donor, recipient):
     return functions.are_blood_compatible(donor.bloodTypeDonor, recipient.bloodTypePatient) \

@@ -55,8 +55,12 @@ for fn in args.inputFiles:
     model.setObjective(obj, GRB.MAXIMIZE) 
     model.optimize()
             
-    quality = sum(matchVars[v].X*matches[v] for v in matchVars)
-    count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
+    if args.incompatibleOnly:
+        quality = sum(matchVars[v].X*matches[v] for v in matchVars) + sum(matches[t,0] for t in range(1,T+1))
+        count = sum(COUNT(v)*matchVars[v].X for v in matchVars) + T
+    else:
+        quality = sum(matchVars[v].X*matches[v] for v in matchVars)
+        count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
     
     results += str(count) + "\t" + str(quality) + "\n"
 
