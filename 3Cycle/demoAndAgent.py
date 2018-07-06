@@ -13,29 +13,46 @@ parser.add_argument('--data', nargs = "+", help = "List of files with demographi
 parser.add_argument('--agent', help = "File with agent information")
 parser.add_argument('-T', default = 50)
 parser.add_argument('-o)', '--output')
+parser.add_argument('--addBeta', help = "Add predicted beta to agent information, betas from agent csv of \
+                    onlineMatching of the same population")
 args = parser.parse_args()
 
 results = ''
-t = 1
+     
+with open(args.agent, 'r') as f:
+    agent = f.readlines()
+
+if (args.addBeta):
+    with open(args.addBeta, 'r') as f:
+        beta = f.readlines()
+
+agentList = []
+t = 0
 for fn in args.data:
     with open(fn, 'rb') as f:
         d = pickle.load(f)
         demo = d[4]
-    print t
-    t += 1
-    agentList = []     
-    with open(args.agent, 'r') as f:
-        agent = f.readlines()
-    for i in range(2*args.T):
+        
+    if (args.addBeta):
+        betas = {}
+        for i in range(t*2*args.T, (t+1)*2*args.T):
+            betaInfo = beta[i].split('\t')
+            betas[betaInfo[0]] = betaInfo[6][:-1]
+            
+    for i in range(t*2*args.T, (t+1)*2*args.T):
         agentList.append(agent[i].split('\t'))
-    
-    for i in range(len(agentList)):
+
         if (agentList[i][0][0] == 'I'):
             id = int(agentList[i][0][1:]) + args.T-1
         else:
             id = int(agentList[i][0][1:])-1
-        results += agent[i][:-1] + "\t" + "\t".join(str(v) for v in demo[id]) + "\n"
-
+        if (args.addBeta):           
+            results += agent[i][:-1] + "\t" + betas[agentList[i][0]] + "\t" + "\t".join(str(v) for v in demo[id]) + "\n"
+        else:            
+            #-1 cuts off new line character
+            results += agent[i][:-1] + "\t" + "\t".join(str(v) for v in demo[id]) + "\n"
+    print t
+    t += 1
 if args.output:
     with open(args.output, 'w') as f:
         f.write(results)
