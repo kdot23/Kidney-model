@@ -79,6 +79,9 @@ for fn in args.inputFiles:
     
     results += str(count) + "\t" + str(quality) + "\n"
 
+
+    used_incompat = set()
+
     for v in matchVars:
         if round(matchVars[v].X) != 0:
             #if there is a compatible pair in the match
@@ -93,14 +96,17 @@ for fn in args.inputFiles:
                     + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
                     agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
                     + "C" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "C" + "\n"
+                    used_incompat.add(v[1])
                 #compatible and 2 incompatible
                 else:
-                     agentInfo += "C" + str(v[0]) + "\t" + str(0) + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" \
+                    agentInfo += "C" + str(v[0]) + "\t" + str(0) + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" \
                     + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
-                     agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
+                    agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
                     + "C" + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" + "I" + "\n"
-                     agentInfo += "I" + str(v[2]) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" \
+                    agentInfo += "I" + str(v[2]) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" \
                     + "I" + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" + "C" + "\n"
+                    used_incompat.add(v[1])
+                    used_incompat.add(v[2])
                   
             #only incompatible pairs
             else:
@@ -110,6 +116,8 @@ for fn in args.inputFiles:
                     + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\n"
                     agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
                     + "I" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\n"  
+                    used_incompat.add(v[0]-T)
+                    used_incompat.add(v[1])
                 #3 cycle
                 else:
                     agentInfo += "I" + str(v[0]-T) + "\t" + str(0) + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" \
@@ -118,7 +126,14 @@ for fn in args.inputFiles:
                     + "I" + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" + "I" + "\n"
                     agentInfo += "I" + str(v[2]) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[2]+T]) + "\t" \
                     + "I" + "\t" + str(directed_matches[v[2]+T,v[0]]) + "\t" + "I" + "\n"
+                    used_incompat.add(v[0]-T)
+                    used_incompat.add(v[1])
+                    used_incompat.add(v[2])
 
+    for i in range(1,num_incompat+1):
+        if i not in used_incompat:
+             agentInfo += "I" + str(i) + "\t" + str(T+2) + "\t" + str(0) + "\t" \
+        + "N" + "\t" + str(0) + "\t" + "N" + "\n"
 
 if args.output:
     with open(args.output, 'w') as f:
