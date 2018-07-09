@@ -13,6 +13,11 @@ args = parser.parse_args()
 
 results = []
 
+def COUNT(v):
+    if v[1] == 0:
+        return 1
+    return 2
+
 
 for fn in args.inputFiles:
     with open(fn, 'rb') as f:
@@ -36,6 +41,7 @@ for fn in args.inputFiles:
     for i in range(1,K+1):
         if any(k[0] == i+T for k in matches):
             beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
+            continue
         if any(k[1] == i for k in matches):
             beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
     beta[0] = 0
@@ -44,7 +50,7 @@ for fn in args.inputFiles:
         model.addConstrs((matches[t,i] - alpha[t] - beta[i] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta  \
                 if (t,i) in matches), "something...")
     else:
-        model.addConstrs((1 - alpha[t] - beta[i] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta \
+        model.addConstrs((COUNT((t,i)) - alpha[t] - beta[i] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta \
                 if (t,i) in matches), "something...")
     
     obj = quicksum(alpha[t] for t in alpha) + quicksum(beta[i] for i in beta)
