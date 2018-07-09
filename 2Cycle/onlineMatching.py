@@ -30,6 +30,9 @@ parser.add_argument('--quality', action='store_true', help='Flag should be prese
 parser.add_argument('--forestRegression', nargs='?', const=10, type=int, \
         help='Flag should be present if forest regression is to be used instead of Linear, optional argument of number of trees')
 parser.add_argument('--graph', help='stem of output file for graph')
+parser.add_argument('--lpEstimator', action='store_true', help='flag should be present if dual on incompatible pool only should be \
+        used to estimate beta values')
+parser.add_argument('--lpRepeat', action='store_true', help='flag should be present if lp repeat method is used to estimate betas')
 args = parser.parse_args()
 
 
@@ -60,6 +63,38 @@ def getBloodTypes(demo):
         bd = 3
     return br,bd
 
+def calcBetasLP(T, K, matches, used_incompat):
+    estimator = Model('estimate beta values')
+    alpha = {}
+    beta = {}
+    for t in range(T+1,T+K+1):
+        if t-T in used_incompat: continue
+        if any(k[0] == t for k in matches if k[1] not in used_incompat):
+            alpha[t] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='alpha_'+str(t))
+    for i in range(1,K+1):
+        if i in used_incompat: continue
+        if any(k[0] == i+T for k in matches if k[1] not in used_incompat) or any(k[1] == i for k in matches if k[0] > T \
+                and k[0]-T not in used_incompat):
+            beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, \
+                    name='beta_'+str(i))
+    if args.quality:
+        estimator.addConstrs((matches[t,i] - alpha[t] - beta[i] -  (beta[t-T] if t-T in beta else 0) <= 0 \
+                for t in alpha for i in beta if (t,i) in matches),  'something...')
+    else:
+        estimator.addConstrs((COUNT((t,i)) - alpha[t] - beta[i] - (beta[t-T] if t-T in beta else 0) <= 0 \
+                for t in alpha for i in beta if (t,i) in matches), 'something...')
+    obj = quicksum(alpha[t] for t in alpha) + quicksum(beta[i] for i in beta)
+    estimator.setObjective(obj, GRB.MINIMIZE)
+    estimator.optimize()
+    newBeta =  {i:beta[i].X for i in beta}
+    for i in range(1, K+1):
+        if i in used_incompat:
+            continue
+        if i not in newBeta:
+            newBeta[i] = 0
+    return newBeta
+
+
 results = ''
 graph = "digraph G {\n"
 varsUsed = args.useVars
@@ -80,7 +115,7 @@ for d in data:
 poly = PolynomialFeatures(degree=args.degree)
 X = poly.fit_transform(values)
 if not args.forestRegression:
-    LR = linear_model.LinearRegression()
+    LR = linear_model.Ridge()
 else:
     LR = ensemble.RandomForestRegressor(n_estimators=args.forestRegression)
 LR.fit(X, labels)
@@ -97,11 +132,15 @@ for fn in args.testFiles:
     matches = data[2]
     demo = data[4]
     directed_matches = data[6]
+    used_incompat = set()
     
     testValues = [[demo[i][v] for v in varsUsed] for i in range(T,T+K)]
     X2 = poly.fit_transform(testValues)
-    betaList = LR.predict(X2)
-    beta = {i+1:betaList[i] for i in range(len(betaList))}
+    if not (args.lpEstimator or args.lpRepeat):
+        betaList = LR.predict(X2)
+        beta = {i+1:betaList[i] for i in range(len(betaList))}
+    else:
+        beta = calcBetasLP(T,K,matches,used_incompat)
     
     beta[0] = 0
     
@@ -109,7 +148,7 @@ for fn in args.testFiles:
     count = 0
     for t in range(1,T+1):
         if args.quality: 
-            values = {i:.1*random.random()+ matches[t,i] - beta[i] for i in beta if (t,i) in matches }
+            values = {i:.1*random.random() + matches[t, i] - beta[i] for i in beta if (t,i) in matches }
         else:
             values = {i:.1*random.random()+COUNT((t,i)) - beta[i] for i in beta if (t,i) in matches}
         max_index = max(values, key=values.get)
@@ -125,7 +164,11 @@ for fn in args.testFiles:
         if max_index != 0:
             count += 2
             quality += matches[t,max_index]
+            used_incompat.add(max_index)
             del beta[max_index]
+            if args.lpRepeat:
+                beta = calcBetasLP(T, K, matches, used_incompat)
+                beta[0] = 0
             bt1 = getBloodTypes(demo[t-1])
             bt2 = getBloodTypes(demo[max_index + T - 1])
             graph += "edge [color="+graph_colors[bt1[1]] + "];\n"

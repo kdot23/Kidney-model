@@ -30,6 +30,9 @@ parser.add_argument('--forestRegression', nargs='?', const=10, type=int, \
         help='Flag should be present if forest regression is to be used instead of Linear, optional argument of number of trees')
 parser.add_argument('--graph', help='stem of output file for graph')
 parser.add_argument('-d', '--degree', default=1, type=int, help='type of polynomial to use while training')
+parser.add_argument('--lpEstimator', action='store_true', help='should be present if dual on incompatibles only should be used to \
+        estimate betas')
+parser.add_argument('--lpRepeat', action='store_true', help='should be present if lp repeat method is used to estimate betas')
 args = parser.parse_args()
 
 
@@ -61,6 +64,37 @@ def COUNT(v):
     if v[2] == 0:
         return 2
     return 3
+def calcBetaLP(T, K, matches, used_incompat):
+    estimator = Model("estimate beta vals")
+    alpha = {}
+    beta = {}
+    for t in range(T+1, T+K+1):
+        if t-T in used_incompat: continue
+        if any(k[0] == t for k in matches if k[1] not in used_incompat and k[2] not in used_incompat):
+            alpha[t] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='alpha_'+str(t))
+    for i in range(1,K+1):
+        if i in used_incompat: continue
+        if any(k[0] == i+T for k in matches if k[1] not in used_incompat and k[2] not in used_incompat):
+            beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
+        elif any(k[1] == i for k in matches if k[0] > T and k[0]-T not in used_incompat and k[2] not in used_incompat):
+            beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
+        elif any(k[2] == i for k in matches if k[0] > T and k[0] not in used_incompat and k[1] not in used_incompat):
+            beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
+    if args.quality:
+        estimator.addConstrs((matches[t,i,j] - alpha[t] - beta[i] -beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta \
+                for j in beta if (t,i,j) in matches), 'something')
+    else:
+        estimator.addConstrs((COUNT((t,i,j)) - alpha[t] -beta[i] - beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta \
+                for j in beta if (t,i,j) in matches), 'something')
+    obj = quicksum(alpha[t] for t in alpha) + quicksum(beta[i] for i in beta)
+    estimator.setObjective(obj, GRB.MINIMIZE)
+    estimator.optimize()
+    newBeta = {i:beta[i].X for i in beta}
+    for i in range(1, K+1):
+        if i in used_incompat:continue
+        if i not in newBeta:
+            newBeta[i] = 0
+    return newBeta
 
 results = ''
 agentInfo = '' 
@@ -85,7 +119,7 @@ for d in data:
 poly = PolynomialFeatures(degree=args.degree)
 X = poly.fit_transform(values)
 if not args.forestRegression:
-    LR = linear_model.LinearRegression()
+    LR = linear_model.Ridge()
 else:
     LR = ensemble.RandomForestRegressor(n_estimators=args.forestRegression)
 LR.fit(X, labels)
@@ -100,11 +134,15 @@ for fn in args.testFiles:
     matches = data[3]
     demo = data[4]
     directed_matches = data[6]
+    used_incompat = set()
     
     testValues = [[demo[i][v] for v in varsUsed] for i in range(T,T+K)]
     X2 = poly.fit_transform(testValues)
-    betaList = LR.predict(X2)
-    beta = {i+1:betaList[i] for i in range(len(betaList))}
+    if not (args.lpEstimator or args.lpRepeat):
+        betaList = LR.predict(X2)
+        beta = {i+1:betaList[i] for i in range(len(betaList))}
+    else:
+        beta = calcBetaLP(T, K, matches, used_incompat)
 
     #FOR CAPPING
     for i in beta:
@@ -139,8 +177,14 @@ for fn in args.testFiles:
 
         if max_index[1] != 0:
             del beta[max_index[1]]
+            used_incompat.add(max_index[1])
         if max_index[2] != 0:
             del beta[max_index[2]] 
+            used_incompat.add(max_index[2])
+        if args.lpRepeat and (max_index[2] != 0 or max_index[1] != 0):
+            beta = calcBetaLP(T, K, matches, used_incompat)
+            beta[0] = 0
+            
 
     """
         if max_i != 0:
