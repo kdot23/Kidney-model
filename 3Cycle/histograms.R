@@ -1,5 +1,35 @@
-online$betaCat = cut(online$beta, c(-100,5,10,15,20,25), labels = c('<5','5-10','10-15','15-20','>20'))
-greedy$betaCat = cut(greedy$beta, c(-100,5,10,15,20,25), labels = c('<5','5-10','10-15','15-20','>20'))
+incompat = subset(agents, grepl("I",id))
+par(mar=c(6,4,4,4))
+b =boxplot(get_quality~algorithm*betaCat, data=incompat,
+        ylab="Quality Received", las=2,  col=(c("gold","darkgreen")), main = "Quality Received by Beta Value of Incompatible Pairs")
+compat = subset(agents, grepl("C",id))
+boxplot(compat$get_quality, add=TRUE)
+#get_type of afam
+afam = subset(agents, agents$donor_afam == 1)
+a = subset(agents, agents$donor_afam==1 & agents$algorithm=='Online')
+boxplot(get_quality~algorithm*donor_afam, data = agents,  ylab="Quality Received", names=c("Greedy-F", "Online-F", "Greedy-M", "Online-M"),
+        las=2,  col=c("gold","darkgreen"), main = "Received Quality for African American Donors by Algorithm")
+bartable = table(afam$get_type, afam$algorithm)
+barplot(prop.table(bartable,2), col = c("lightblue2", "palegreen", "palegoldenrod"), main="Pairs with African American donors")
+legend("bottom", inset = c(-.45,-.45), legend = 
+         c("Received kidney from a compatible pair", "Received kidney from an incompatible pair", "No match"), 
+       fill = c("lightblue2", "palegreen", "palegoldenrod"), cex = .75)
+barplot(get_type~algorithm*donor_afam)
+
+par(mar=c(7,4,3,4))
+boxplot(get_quality~algorithm*donor_blood, data = agents,  ylab="Quality Received", 
+        names=c("Greedy-O", "Online-O", "Greedy-A", "Online-A", "Greedy-B", "Online-B", "Greedy-AB", "Online-AB"),
+        las=2,  col=c("gold","darkgreen"), main = "Received Quality by Donor Blood Type and Algorithm")
+boxplot(get_quality~algorithm*rec_blood, data = agents,  ylab="Quality Received", 
+        names=c("Greedy-O", "Online-O", "Greedy-A", "Online-A", "Greedy-B", "Online-B", "Greedy-AB", "Online-AB"),
+        las=2,  col=c("gold","darkgreen"), main = "Received Quality by Recipient Blood Type and Algorithm")
+boxplot(get_quality~algorithm*ageCat, data = agents,  ylab="Quality Received", 
+        las=2,  col=c("gold","darkgreen"), main = "Received Quality by Donor Age and Algorithm")
+boxplot(get_quality~algorithm*donor_cig, data = agents,  ylab="Quality Received", 
+        names=c("Greedy-No", "Online-No", "Greedy-Yes", "Online-Yes"),
+        las=2,  col=c("gold","darkgreen"), main = "Received Quality by Donor Cigarette Use and Algorithm")
+boxplot(get_quality~algorithm*rec_pra, data = agents,  ylab="Quality Received", 
+        las=2,  col=c("gold","darkgreen"), main = "Received Quality by Recipient PRA and Algorithm")
 
 #histogram of all agents
 greedyh = hist(agentsOnline50$get_quality, col= rgb(0,0,1,1/4), , main = "Histogram of Quality for All Pairs", 
@@ -21,12 +51,18 @@ legend("bottom", inset = c(-.45,-.45), legend =
        fill = c("lightblue2", "palegreen", "palegoldenrod"), cex = .75)
 
 #barplot of what happens by beta (may use proportions)
-onlinei = subset(agentsOnline50, grepl("I", id))
+onlinei = subset(online, grepl("I", id))
+greedyi = subset(greedy, grepl("I", id))
 t = cbind(table(onlinei[which(onlinei$betaCat == '<5'), ]$get_type),
       table(onlinei[which(onlinei$betaCat == '5-10'), ]$get_type),
       table(onlinei[which(onlinei$betaCat == '10-15'), ]$get_type),
       table(onlinei[which(onlinei$betaCat == '15-20'), ]$get_type),
-      table(onlinei[which(onlinei$betaCat == '>20'), ]$get_type))
+      table(onlinei[which(onlinei$betaCat == '>20'), ]$get_type),
+      table(greedyi[which(greedyi$betaCat == '<5'), ]$get_type),
+      table(greedyi[which(greedyi$betaCat == '5-10'), ]$get_type),
+      table(greedyi[which(greedyi$betaCat == '10-15'), ]$get_type),
+      table(greedyi[which(greedyi$betaCat == '15-20'), ]$get_type),
+      table(greedyi[which(greedyi$betaCat == '>20'), ]$get_type))
 #proportions
 tp = cbind(t[,1]/nrow(onlinei[which(onlinei$betaCat == '<5'),]),
                 t[,2]/nrow(onlinei[which(onlinei$betaCat == '5-10'),]),
@@ -41,40 +77,16 @@ legend("bottom", inset = c(-.45,-.45), legend =
        fill = c("lightblue2", "palegreen", "palegoldenrod"), cex = .75)
 
 #boxplot of quality by beta if matched with compatible
-par(mar=c(5,4,4,4))
+par(mar=c(7,4,2,4))
 fmatched = subset(online, grepl("I",id) & online$get_type == 'C')
+fmatched$type = c(rep("Online"))
 gmatched = subset(greedy, grepl("I",id) & greedy$get_type == 'C')
-match = rbind(fmathced,gmatched)
-boxplot(fmatched[which(fmatched$betaCat == '<5'), ]$get_quality, gmatched[which(gmatched$betaCat == '<5'), ]$get_quality,
-        fmatched[which(fmatched$betaCat == '5-10'), ]$get_quality, gmatched[which(gmatched$betaCat == '5-10'), ]$get_quality,
-        fmatched[which(fmatched$betaCat == '10-15'), ]$get_quality, gmatched[which(gmatched$betaCat == '10-15'), ]$get_quality,
-        fmatched[which(fmatched$betaCat == '15-20'), ]$get_quality, gmatched[which(gmatched$betaCat == '15-20'), ]$get_quality,
-        fmatched[which(fmatched$betaCat == '>20'), ]$get_quality, gmatched[which(gmatched$betaCat == '>20'), ]$get_quality,
-        main = "Quality Received When Matched With Compatible", ylim = c(0,25), lab = "Beta Value", ylab = "Quality",
-        names= c("<5: Online","5-10: Online","10-15: Online","15-20: Online", ">20: Online",
-                 "<5: Greedy","5-10: Greedy","10-15: Greedy","15-20: Greedy", ">20: Greedy"))
-
-#boxplot of avg time by beta if matched with compatible
-boxplot(fmatched[which(fmatched$betaCat == '<5'), ]$time, 
-        fmatched[which(fmatched$betaCat == '5-10'), ]$time,
-        fmatched[which(fmatched$betaCat == '10-15'), ]$time, 
-        fmatched[which(fmatched$betaCat == '15-20'), ]$time,
-        fmatched[which(fmatched$betaCat == '>20'), ]$time, 
-        main = "Time Matched With Compatible", xlab = "Beta Value", ylab = "Time",
-        names= c("<5","5-10","10-15","15-20", ">20"))
-library(readr)
-greedy <- read_delim("~/Documents/Kidney-model/3Cycle/results/greedyAgents.csv", 
-                     "\t", escape_double = FALSE, col_names = FALSE, 
-                     trim_ws = TRUE)
-online <- read_delim("~/Documents/Kidney-model/3Cycle/results/demoAndAgentsOnline.csv", 
-                     "\t", escape_double = FALSE, col_names = FALSE, 
-                     trim_ws = TRUE)
-colnames(greedy)= c("id","time","get_quality","get_type","give_quality", "give_type", "beta", 
-                    "blood_patient_o", "blood_patient_a", "blood_patient_b", "blood_patient_ab", 
-                    "blood_donor_o", "blood_donor_a", "blood_donor_b", "blood_donor_ab", "donor_afam", 
-                    "donor_age", "donor_sex", "donor_cig", "rec_sex", "donor_weight", "rec_weight", 
-                    "donor_bmi", "donor_eGFR", "donor_sbp","rec_pra")
-
+gmatched$type = c(rep("Greedy"))
+match = rbind(fmatched,gmatched)
+boxplot(get_quality~type*betaCat, data=match, notch=TRUE, 
+        col=(c("gold","darkgreen")), las =2, ylab = "Quality Received")
+boxplot(time~type*betaCat, data=match, notch=TRUE, 
+        col=(c("gold","darkgreen")), las =2, ylab = "Time of Match")
 
 
 

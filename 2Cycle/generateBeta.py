@@ -57,6 +57,11 @@ for fn in args.inputFiles:
     model.setObjective(obj, GRB.MINIMIZE)
     model.optimize()
     
+    for t in range(T+1,T+K+1):
+        if t not in alpha: continue
+        if alpha[t].X > 0:
+            print alpha[t]
+    
     for i in range(1,K+1):
         results.append((demo[i+T-1], (beta[i].X if i in beta else 0)))
 
