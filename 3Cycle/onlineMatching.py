@@ -68,10 +68,6 @@ def calcBetaLP(T, K, matches, used_incompat):
     estimator = Model("estimate beta vals")
     alpha = {}
     beta = {}
-    for t in range(T+1, T+K+1):
-        if t-T in used_incompat: continue
-        if any(k[0] == t for k in matches if k[1] not in used_incompat and k[2] not in used_incompat):
-            alpha[t] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='alpha_'+str(t))
     for i in range(1,K+1):
         if i in used_incompat: continue
         if any(k[0] == i+T for k in matches if k[1] not in used_incompat and k[2] not in used_incompat):
@@ -81,12 +77,12 @@ def calcBetaLP(T, K, matches, used_incompat):
         elif any(k[2] == i for k in matches if k[0] > T and k[0] not in used_incompat and k[1] not in used_incompat):
             beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
     if args.quality:
-        estimator.addConstrs((matches[t,i,j] - alpha[t] - beta[i] -beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta \
+        estimator.addConstrs((matches[t,i,j] - beta[i] -beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in range(T+1,T+K+1) if t-T in beta for i in beta \
                 for j in beta if (t,i,j) in matches), 'something')
     else:
-        estimator.addConstrs((COUNT((t,i,j)) - alpha[t] -beta[i] - beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in alpha for i in beta \
+        estimator.addConstrs((COUNT((t,i,j)) - beta[i] - beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in range(T+1,T+K+1) if t-T in beta for i in beta \
                 for j in beta if (t,i,j) in matches), 'something')
-    obj = quicksum(alpha[t] for t in alpha) + quicksum(beta[i] for i in beta)
+    obj = quicksum(beta[i] for i in beta)
     estimator.setObjective(obj, GRB.MINIMIZE)
     estimator.optimize()
     newBeta = {i:beta[i].X for i in beta}
