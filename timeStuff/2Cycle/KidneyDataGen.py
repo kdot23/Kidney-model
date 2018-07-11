@@ -172,4 +172,4 @@ for i in range(len(incompatibles)):
                 matches3C[i+C+1,j+1,k+1] = util.calculate_survival(lkdpi_1) + util.calculate_survival(lkdpi_2) + util.calculate_survival(lkdpi_3)
 
 with open(filename, 'wb') as f:
-    pickle.dump((C, I, T, matches2C, matches3C, demo, misMatches, matchesDirected,departureTimesIncompat), f)
+    pickle.dump((I, C, T, matches2C, matches3C, demo, misMatches, matchesDirected,departureTimesIncompat), f)
