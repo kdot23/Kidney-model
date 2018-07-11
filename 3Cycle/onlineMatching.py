@@ -74,7 +74,7 @@ def calcBetaLP(T, K, matches, used_incompat):
             beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
         elif any(k[1] == i for k in matches if k[0] > T and k[0]-T not in used_incompat and k[2] not in used_incompat):
             beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
-        elif any(k[2] == i for k in matches if k[0] > T and k[0] not in used_incompat and k[1] not in used_incompat):
+        elif any(k[2] == i for k in matches if k[0] > T and k[0]-T not in used_incompat and k[1] not in used_incompat):
             beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
     if args.quality:
         estimator.addConstrs((matches[t,i,j] - beta[i] -beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in range(T+1,T+K+1) if t-T in beta for i in beta \
