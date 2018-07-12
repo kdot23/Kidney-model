@@ -16,6 +16,7 @@ parser.add_argument('-o', '--output', help='write results to this file (.csv)')
 parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
 parser.add_argument("-n", type = int, default = 2, help = "max number of connections incompatibles can be matched to and still removed from pool")
 parser.add_argument("--graph", help = "output a graphviz representation")
+parser.add_argument('-q', '--cadence', default=1, type=int)
 args=parser.parse_args()
 
 graph_colors = ["red", "blue", "green", "black"]
@@ -53,18 +54,102 @@ dataIndex = 0
 for fn in args.inputFiles:    
     with open(fn, 'rb') as f:
         d = pickle.load(f)
-    num_incompat = d[0]
-    num_compat = d[1]
-    num_pairs = num_incompat + num_compat
-    matches = d[2]
-    T = num_compat
-    K = num_incompat
-    demo = d[4]
-    directed_matches = d[6]
+    I = d[0]
+    C = d[1]
+    num_pairs = I+C
+    T = d[2]
+    matches = d[3]
+    demo = d[5]
+    directed_matches = d[7]
+    departure_times = d[8]
+
+    available_incompat = set()
+    unmatched_incompat = set()
+    arriving_incompat = {}
+    arriving_compat = {}
     
     quality = 0
     count = 0
 
+    for i in range(C):
+        if demo[i][20] not in arriving_compat:
+            arriving_compat[demo[i][20]] = []
+        arriving_compat[demo[i][20]].append(i+1)
+    for i in range(C,C+I):
+        if demo[i][20] not in arriving_incompat:
+            arriving_incompat[demo[i][20]] = set()
+        arriving_incompat[demo[i][20]].add(i+1-C)
+        
+
+    for t in range(T):
+        departing_incompat = set()
+        for i in available_incompat:
+            if departure_times[i-1] < t:
+                departing_incompat.add(i)
+        available_incompat = available_incompat.difference(departing_incompat)
+        unmatched_incompat = unmatched_incompat.union(departing_incompat)
+        if t in arriving_incompat:
+            available_incompat = available_incompat.union(arriving_incompat[t])
+
+
+        if t in arriving_compat:
+            #do compatible matching stuff
+            for i in arriving_compat[t]:
+                values = {j:matches[i,j] for j in available_incompat.union(set([0])) if (i,j) in matches}
+                max_index = max(values, key=values.get)
+                if max_index == 0:
+                    count += 1
+                    agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[i,0]) + "\t" \
+                    + "C" + "\t" + str(directed_matches[i,0]) + "\t" + "C" + "\t" +  "\n"
+                else:
+                    available_incompat.remove(max_index)
+                    count += 2
+                    agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[i,max_index+C]) + "\t" + "I" + "\t" +  "\n"
+                    agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i,max_index+C]) + "\t" \
+                    + "C" + "\t" + str(directed_matches[max_index+C,i]) + "\t" + "C" + "\t" +  "\n"
+                quality += matches[i,max_index]
+
+
+        if t%args.cadence==0:
+            #do incompatible matching stuff
+            model = Model('blargh')
+            matchVars = {}
+            for i in available_incompat:
+                for j in available_incompat:
+                    if (i+C,j) not in matches: continue
+                    matchVars[i+C,j] = model.addVar(vtype = GRB.BINARY,  name = "match_" + str((i+C,j)))
+            model.addConstrs((quicksum(matchVars[t,i] for i in range(1,I+1) if (t,i) in matchVars) <= 1 for t in range(C,C+I+1)), "only match with one other pair")
+            model.addConstrs((quicksum(matchVars[t,i] for t in range(C,C+I+1) if (t,i) in matchVars) + quicksum(matchVars[i+C,j] for j in range(1, I+1) \
+                               if (i+C,j) in matchVars) <= 1 for i in range(1,I+1)), "symmetry")
+            if args.quality:
+                obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
+            else:
+                obj = quicksum(matchVars[v]*COUNT(v) for v in matchVars)
+            model.setObjective(obj, GRB.MAXIMIZE) 
+            model.optimize()
+            count += sum(COUNT(v)*matchVars[v].X for v in matchVars)
+            quality += sum(matches[v]*matchVars[v].X for v in matchVars)
+
+            for v in matchVars:
+                if round(matchVars[v].X) != 0:
+                    available_incompat.remove(v[0]-C)
+                    available_incompat.remove(v[1])
+                    #Agent Info Stuff
+                    agentInfo += "I" + str(v[0]-C) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" +  "\n"
+                    agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\t" +  "\n"
+
+    unmatched_incompat = unmatched_incompat.union(available_incompat)
+    for i in unmatched_incompat:
+        agentInfo += "I" + str(i) + "\t" + str(T) + "\t" + str(0) + "\t" \
+        + "N" + "\t" + str(0) + "\t" + "N" + "\n"
+
+    results += str(count) + '\t' + str(quality) + '\n'
+
+
+"""
     graph = "digraph G { \n"
     #greedy algorithm for compatible pairs by order of index
     used_incompat = set()
@@ -154,6 +239,7 @@ for fn in args.inputFiles:
         if i not in used_incompat:
             agentInfo += "I" + str(i) + "\t" + str(T+2) + "\t" + str(0) + "\t" \
             + "N" + "\t" + str(0) + "\t" + "N" + "\n"
+            """
 
 if args.output:
     with open(args.output, 'w') as f:
