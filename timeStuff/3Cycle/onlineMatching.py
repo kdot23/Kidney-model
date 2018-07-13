@@ -249,7 +249,12 @@ for fn in args.testFiles:
                         agentInfo += "I" + str(v[2]) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[2]+C]) + "\t" \
                         + "I" + "\t" + str(directed_matches[v[2]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[2]]) + "\n"
 
-            results += str(count) + '\t' + str(quality) + '\n'
+    results += str(count) + '\t' + str(quality) + '\n'
+    unmatched_incompat = unmatched_incompat.union(set((i,lastBeta[i]) for i in available_incompat))
+    for a in unmatched_incompat:
+        i = a[0]
+        b = a[1]
+        agentInfo += "I" + str(i) + "\t" + str(T) + "\t" + str(0) + "\t" + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(b) +"\n"
 
     """
 
