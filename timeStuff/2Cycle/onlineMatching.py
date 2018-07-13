@@ -160,10 +160,11 @@ for fn in args.testFiles:
              beta = calcBetasLP(C, matches, available_incompat)
         else:
             #update betas another way
-            testValues = [demo[i+C-1][v] for i in available_incompat for v in varsUsed]
-            testValues = poly.fit_transform(testValues)
-            betalist = LR.predict(testValues)
-            beta = {i+1:betalist[i] for i in range(len(betalist))}
+            beta = {}
+            for i in available_incompat:
+                testValue = [[demo[i+C-1][v] for v in varsUsed]]
+                testValue = poly.fit_transform(testValue)
+                beta[i] = LR.predict(testValue)[0]
         beta[0] = 0
         lastBeta = beta
 
