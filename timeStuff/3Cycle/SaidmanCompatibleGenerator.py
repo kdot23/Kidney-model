@@ -62,6 +62,10 @@ class SaidmanCompatibleGenerator:
         self.AA_given_type_B = self.type_B_given_AA * self.donorAA / self.Pr_DONOR_TYPE_B
         self.AA_given_type_AB = self.type_AB_given_AA * self.donorAA / self.Pr_DONOR_TYPE_AB
 
+
+        self.HEALTH_MEAN = .75
+        self.HEALTH_STDEV = .1
+
     def drawPatientBloodType(self):
 
         # 'O': 0, 'A': 1, 'B': 2, 'AB': 3
@@ -93,6 +97,10 @@ class SaidmanCompatibleGenerator:
             x = np.random.choice([0, 1], p=[1 - self.AA_given_type_AB, self.AA_given_type_AB])
 
         return x.astype(int)
+
+
+    def drawPatientHealth(self):
+        return min(np.random.normal(self.HEALTH_MEAN,self.HEALTH_STDEV), 1.0)
 
     def isPatientFemale(self):
         return random.random() <= self.Pr_FEMALE
@@ -211,9 +219,10 @@ class SaidmanLKDPIPool:
                 self.incompatibleID.append(i)
 
 class BJCPair():
-    def __init__(self, life_time=0, pair_index=0):
+    def __init__(self, life_time=0, pair_index=0, arrival_time=0):
         self.life_time = life_time
         self.pair_index = pair_index
+        self.arrival_time = arrival_time
         self.generator = DistributionGenerator()
         self.saidman = SaidmanCompatibleGenerator()
         self.generatePair()
@@ -265,6 +274,8 @@ class BJCPair():
         self.donor_rec_HLA_DR_mis = mis_B_DR[1]
 
         self.donor_rec_weight_ratio = util.calculate_weight_ratio(self.donor_weight, self.rec_weight)
+
+        self.patient_health = self.saidman.drawPatientHealth()
 
 
     def get_lkdpi(self):

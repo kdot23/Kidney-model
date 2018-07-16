@@ -33,6 +33,7 @@ parser.add_argument('-d', '--degree', default=1, type=int, help='type of polynom
 parser.add_argument('--lpEstimator', action='store_true', help='should be present if dual on incompatibles only should be used to \
         estimate betas')
 parser.add_argument('--lpRepeat', action='store_true', help='should be present if lp repeat method is used to estimate betas')
+parser.add_argument('--graph_state', action='store_true', help='flag should be present if lpEstimator values are going to be used for training')
 args = parser.parse_args()
 
 
@@ -108,10 +109,20 @@ if args.trainFiles:
     values = []
     labels = []
 
+<<<<<<< HEAD
     for d in data:
         demo = d[0]
         values.append([demo[v] for v in varsUsed])
         labels.append(d[1])
+=======
+for d in data:
+    demo = d[0]
+    if args.graph_state:
+        values.append([demo[v] for v in varsUsed]+ [d[2]])
+    else:
+        values.append([demo[v] for v in varsUsed])
+    labels.append(d[1])
+>>>>>>> 6dfbeed68a5bb4446daaedd541ed3efc09fb4a55
 
     poly = PolynomialFeatures(degree=args.degree)
     X = poly.fit_transform(values)
@@ -132,9 +143,18 @@ for fn in args.testFiles:
     demo = data[4]
     directed_matches = data[6]
     used_incompat = set()
+<<<<<<< HEAD
     
     testValues = [[demo[i][v] for v in varsUsed] for i in range(T,T+K)]
     
+=======
+    if args.graph_state:
+        lpbeta = calcBetaLP(T,K,matches,used_incompat)
+        testValues = [[demo[i][v] for v in varsUsed] + [lpbeta[i-T+1]] for i in range(T,T+K)]
+    else:
+        testValues = [[demo[i][v] for v in varsUsed] for i in range(T,T+K)]
+    X2 = poly.fit_transform(testValues)
+>>>>>>> 6dfbeed68a5bb4446daaedd541ed3efc09fb4a55
     if not (args.lpEstimator or args.lpRepeat):
         X2 = poly.fit_transform(testValues)
         betaList = LR.predict(X2)

@@ -58,10 +58,7 @@ for fn in args.inputFiles:
     matches = d[3]
     demo = d[4]
     if args.graph_state:
-        beta = calcBetaLP(T,K,matches)
-        for i in beta:
-            demo[i+T-1] = list(demo[i+T-1])
-            demo[i+T-1].append(beta[i])
+        lpbeta = calcBetaLP(T,K,matches)
 
     
     model = Model("Dual Optimizer")
@@ -95,7 +92,10 @@ for fn in args.inputFiles:
     model.optimize()
     
     for i in range(1,K+1):
-        results.append((demo[i+T-1], (beta[i].X if i in beta else 0)))
+        if args.graph_state:
+            results.append((demo[i+T-1], (beta[i].X if i in beta else 0), lpbeta[i]))
+        else:
+            results.append((demo[i+T-1], (beta[i].X if i in beta else 0)))
 
 if args.output:
     with open(args.output, 'w') as f:

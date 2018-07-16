@@ -21,9 +21,9 @@ parser = argparse.ArgumentParser(description="Generates Donor recipient pairs an
 parser.add_argument('-K', '--num_incompatible', default=100, dest='K', type = int)
 parser.add_argument('-T', '--time', default=100, dest='T', type = int)
 parser.add_argument('-o', '--output', default='data.dat')
-parser.add_argument('--l1', default=1., type=float)
-parser.add_argument('--l2', default=1., type=float)
-parser.add_argument('--gamma', default=.9,type=float)
+parser.add_argument('--l1', default=1., type=float, help = "Incompatible arrival rate")
+parser.add_argument('--l2', default=1., type=float, help = "Compatible arrival rate")
+parser.add_argument('--gamma', default=.9,type=float, help = "Deterioration rate")
 
 args = parser.parse_args()
 

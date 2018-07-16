@@ -33,6 +33,7 @@ parser.add_argument('--graph', help='stem of output file for graph')
 parser.add_argument('--lpEstimator', action='store_true', help='flag should be present if dual on incompatible pool only should be \
         used to estimate beta values')
 parser.add_argument('--lpRepeat', action='store_true', help='flag should be present if lp repeat method is used to estimate betas')
+parser.add_argument('--graph_state', action='store_true', help='flag should be present if lpEstimator values are going to be used for training')
 args = parser.parse_args()
 
 
@@ -105,7 +106,10 @@ labels = []
 
 for d in data:
     demo = d[0]
-    values.append([demo[v] for v in varsUsed])
+    if args.graph_state:
+        values.append([demo[v] for v in varsUsed]+[d[2]])
+    else:
+        values.append([demo[v] for v in varsUsed])
     labels.append(d[1])
 
 poly = PolynomialFeatures(degree=args.degree)
@@ -131,6 +135,11 @@ for fn in args.testFiles:
     used_incompat = set()
     
     testValues = [[demo[i][v] for v in varsUsed] for i in range(T,T+K)]
+    if args.graph_state:
+        lpBeta = calcBetasLP(T,K,matches,used_incompat)
+        for i in range(len(testValues)):
+            testValues[i].append(lpBeta[i+1])
+            
     X2 = poly.fit_transform(testValues)
     if not (args.lpEstimator or args.lpRepeat):
         betaList = LR.predict(X2)
