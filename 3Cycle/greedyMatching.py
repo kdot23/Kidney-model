@@ -177,6 +177,7 @@ for fn in args.inputFiles:
     dataIndex += 1
     
     results += str(count) + "\t" + str(quality) + "\n"
+    print "greedy" + str(fn)
 
 if args.output:
     with open(args.output, 'w') as f:

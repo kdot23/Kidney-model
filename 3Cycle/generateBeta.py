@@ -24,9 +24,9 @@ for fn in args.inputFiles:
     with open(fn, 'rb') as f:
         d = pickle.load(f)
     #T is number of compatible pairs
-    T = d[0]
+    K = d[0]
     #K is number of incompatible pairs
-    K = d[1]
+    T = d[1]
     matches = d[3]
     demo = d[4]
     

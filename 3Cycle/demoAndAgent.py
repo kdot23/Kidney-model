@@ -11,7 +11,8 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', nargs = "+", help = "List of files with demographic info")
 parser.add_argument('--agent', help = "File with agent information")
-parser.add_argument('-T', default = 50)
+parser.add_argument('-T', default = 50, type = int)
+parser.add_argument('-K', default = 50, type = int)
 parser.add_argument('-o)', '--output')
 parser.add_argument('--addBeta', help = "Add predicted beta to agent information, betas from agent csv of \
                     onlineMatching of the same population")
@@ -35,13 +36,13 @@ for fn in args.data:
         
     if (args.addBeta):
         betas = {}
-        for i in range(t*2*args.T, (t+1)*2*args.T):
+        for i in range(t*(args.K + args.T), (t+1)*(args.K + args.T)):
             betaInfo = beta[i].split('\t')
             betas[betaInfo[0]] = betaInfo[6][:-1]
             
-    for i in range(t*2*args.T, (t+1)*2*args.T):
+    for i in range(t*(args.K+args.T), (t+1)*(args.K+args.T)):
         agentList.append(agent[i].split('\t'))
-
+        
         if (agentList[i][0][0] == 'I'):
             id = int(agentList[i][0][1:]) + args.T-1
         else:

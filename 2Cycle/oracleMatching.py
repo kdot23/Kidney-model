@@ -95,6 +95,11 @@ for fn in args.inputFiles:
             agentInfo += "I" + str(i) + "\t" + str(52) + "\t" + str(0) + "\t" \
                 + "N" + "\t" + str(0) + "\t" + "N" + "\n"
     
+    if args.incompatibleOnly:
+        for i in range(1, num_compat+1):
+            agentInfo += "C" + str(i) + "\t" + str(0) + "\t" + str(directed_matches[i,0]) + "\t" \
+            + "C" + "\t" + str(directed_matches[i,0]) + "\t" + "C" + "\n"
+    
     results += str(count) + "\t" + str(quality) + "\n"
 
 if args.output:

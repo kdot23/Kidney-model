@@ -78,6 +78,7 @@ for fn in args.inputFiles:
         count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
     
     results += str(count) + "\t" + str(quality) + "\n"
+    print "oracle " + str(fn)
 
 
     used_incompat = set()
@@ -134,6 +135,11 @@ for fn in args.inputFiles:
         if i not in used_incompat:
              agentInfo += "I" + str(i) + "\t" + str(T+2) + "\t" + str(0) + "\t" \
         + "N" + "\t" + str(0) + "\t" + "N" + "\n"
+    
+    if args.incompatibleOnly:
+        for i in range(1, num_compat+1):
+            agentInfo += "C" + str(i) + "\t" + str(0) + "\t" + str(directed_matches[i,0]) + "\t" \
+            + "C" + "\t" + str(directed_matches[i,0]) + "\t" + "C" + "\n"
 
 if args.output:
     with open(args.output, 'w') as f:

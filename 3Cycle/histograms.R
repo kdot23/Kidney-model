@@ -1,35 +1,44 @@
 incompat = subset(agents, grepl("I",id))
-par(mar=c(6,4,4,4))
+par(mar=c(7,4,4,4),xpd=T)
 b =boxplot(get_quality~algorithm*betaCat, data=incompat,
-        ylab="Quality Received", las=2,  col=(c("gold","darkgreen")), main = "Quality Received by Beta Value of Incompatible Pairs")
+        ylab="Quality Received", las=2) #,  col=(c("gold","darkgreen","blue")), main = "Quality Received by Beta Value of Incompatible Pairs")
 compat = subset(agents, grepl("C",id))
 boxplot(compat$get_quality, add=TRUE)
 #get_type of afam
 afam = subset(agents, agents$donor_afam == 1)
-a = subset(agents, agents$donor_afam==1 & agents$algorithm=='Online')
-boxplot(get_quality~algorithm*donor_afam, data = agents,  ylab="Quality Received", names=c("Greedy-F", "Online-F", "Greedy-M", "Online-M"),
-        las=2,  col=c("gold","darkgreen"), main = "Received Quality for African American Donors by Algorithm")
+a = subset(agents, agents$algorithm=='Greedy' | agents$algorithm=='Online')
+boxplot(get_quality~algorithm*donor_afam, data = agents,  ylab="Quality Received", #names=c("Greedy-Other donor", "Online-other donor", "Greedy-Afam donor", "Online-Afam donor"),
+        las=2,  col=c("gold","darkgreen", "blue"), main = "Received Quality for African American Donors by Algorithm")
 bartable = table(afam$get_type, afam$algorithm)
-barplot(prop.table(bartable,2), col = c("lightblue2", "palegreen", "palegoldenrod"), main="Pairs with African American donors")
-legend("bottom", inset = c(-.45,-.45), legend = 
+bartable2 = table(agents[which(agents$donor_afam == 0),]$get_type, agents[which(agents$donor_afam == 0),]$algorithm)
+barplot(prop.table(cbind(table(agents[which(agents$donor_afam == 1),]$get_type, agents[which(agents$donor_afam == 1),]$algorithm), 
+                         table(agents[which(agents$donor_afam == 0),]$get_type, agents[which(agents$donor_afam == 0),]$algorithm)),2),
+        names = c("Greedy-Afam", "OnlineLP-Afam", "Oracle-Afam", "Greedy-Other","OnlineLP-Other", "Oracle-Other"),
+        col = c("lightblue2", "palegreen", "palegoldenrod"), main="Pairs with African American donors", las=2)
+legend("bottom", inset = c(-.65,-.65), legend = 
          c("Received kidney from a compatible pair", "Received kidney from an incompatible pair", "No match"), 
        fill = c("lightblue2", "palegreen", "palegoldenrod"), cex = .75)
 barplot(get_type~algorithm*donor_afam)
 
+barplot(prop.table(cbind(table(incompat[which(incompat$algorithm == "Online3_50"),]$get_type), 
+                         table(incompat[which(incompat$algorithm == "Online3_50_100"),]$get_type)),2),
+        names = c("50-C, 50-I", "50-C, 100-I"), col = c("lightblue2", "palegreen", "palegoldenrod"), 
+        main = "Proportion of Type Received by Incompatible Pairs")
+
 par(mar=c(7,4,3,4))
 boxplot(get_quality~algorithm*donor_blood, data = agents,  ylab="Quality Received", 
-        names=c("Greedy-O", "Online-O", "Greedy-A", "Online-A", "Greedy-B", "Online-B", "Greedy-AB", "Online-AB"),
-        las=2,  col=c("gold","darkgreen"), main = "Received Quality by Donor Blood Type and Algorithm")
+        #names=c("Greedy-O", "Online-O", "Greedy-A", "Online-A", "Greedy-B", "Online-B", "Greedy-AB", "Online-AB"),
+        las=2,  col=c("gold","darkgreen","blue","orange"), main = "Received Quality by Donor Blood Type and Algorithm")
 boxplot(get_quality~algorithm*rec_blood, data = agents,  ylab="Quality Received", 
-        names=c("Greedy-O", "Online-O", "Greedy-A", "Online-A", "Greedy-B", "Online-B", "Greedy-AB", "Online-AB"),
-        las=2,  col=c("gold","darkgreen"), main = "Received Quality by Recipient Blood Type and Algorithm")
+        #names=c("Greedy-O", "Online-O", "Greedy-A", "Online-A", "Greedy-B", "Online-B", "Greedy-AB", "Online-AB"),
+        las=2,  col=c("gold","darkgreen","blue","orange"), main = "Received Quality by Recipient Blood Type and Algorithm")
 boxplot(get_quality~algorithm*ageCat, data = agents,  ylab="Quality Received", 
-        las=2,  col=c("gold","darkgreen"), main = "Received Quality by Donor Age and Algorithm")
+        las=2,  col=c("gold","darkgreen","blue","orange"), main = "Received Quality by Donor Age and Algorithm")
 boxplot(get_quality~algorithm*donor_cig, data = agents,  ylab="Quality Received", 
-        names=c("Greedy-No", "Online-No", "Greedy-Yes", "Online-Yes"),
-        las=2,  col=c("gold","darkgreen"), main = "Received Quality by Donor Cigarette Use and Algorithm")
+       # names=c("Greedy-No", "Online-No", "Greedy-Yes", "Online-Yes"),
+        las=2,  col=c("gold","darkgreen","blue","orange"), main = "Received Quality by Donor Cigarette Use and Algorithm")
 boxplot(get_quality~algorithm*rec_pra, data = agents,  ylab="Quality Received", 
-        las=2,  col=c("gold","darkgreen"), main = "Received Quality by Recipient PRA and Algorithm")
+        las=2,  col=c("gold","darkgreen","blue", "orange"), main = "Received Quality by Recipient PRA and Algorithm")
 
 #histogram of all agents
 greedyh = hist(agentsOnline50$get_quality, col= rgb(0,0,1,1/4), , main = "Histogram of Quality for All Pairs", 

@@ -99,26 +99,27 @@ agentInfo = ''
 graph = "digraph G {\n"
 varsUsed = args.useVars
 data = []
-for fn in args.trainFiles:
-    with open(fn, 'r') as f:
-        data += json.load(f)
-random.shuffle(data)
+if args.trainFiles:
+    for fn in args.trainFiles:
+        with open(fn, 'r') as f:
+            data += json.load(f)
+    random.shuffle(data)
 
-values = []
-labels = []
+    values = []
+    labels = []
 
-for d in data:
-    demo = d[0]
-    values.append([demo[v] for v in varsUsed])
-    labels.append(d[1])
+    for d in data:
+        demo = d[0]
+        values.append([demo[v] for v in varsUsed])
+        labels.append(d[1])
 
-poly = PolynomialFeatures(degree=args.degree)
-X = poly.fit_transform(values)
-if not args.forestRegression:
-    LR = linear_model.Ridge()
-else:
-    LR = ensemble.RandomForestRegressor(n_estimators=args.forestRegression)
-LR.fit(X, labels)
+    poly = PolynomialFeatures(degree=args.degree)
+    X = poly.fit_transform(values)
+    if not args.forestRegression:
+        LR = linear_model.Ridge()
+    else:
+        LR = ensemble.RandomForestRegressor(n_estimators=args.forestRegression)
+        LR.fit(X, labels)
 
 dataIndex = 0
 for fn in args.testFiles:
@@ -133,8 +134,9 @@ for fn in args.testFiles:
     used_incompat = set()
     
     testValues = [[demo[i][v] for v in varsUsed] for i in range(T,T+K)]
-    X2 = poly.fit_transform(testValues)
+    
     if not (args.lpEstimator or args.lpRepeat):
+        X2 = poly.fit_transform(testValues)
         betaList = LR.predict(X2)
         beta = {i+1:betaList[i] for i in range(len(betaList))}
     else:
@@ -263,6 +265,7 @@ for fn in args.testFiles:
 
             
     results += str(count) + "\t" + str(quality) +"\n"
+    print "online " + str(fn) 
     graph += "}"
     if args.graph:
         with open(args.graph+str(dataIndex)+'.gv', 'w') as f:
