@@ -8,7 +8,6 @@ parser = argparse.ArgumentParser(description="Computes the dual of our problem")
 parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help='input file to use')
 parser.add_argument('-o', '--output', help='output file (json) to use. Includes demographic information and beta values')
 parser.add_argument('--quality', action = "store_true", help="Optimize for quality")
-parser.add_argument('--graph_state', action='store_true', help='present if betas estimated by onlineLP should be included in train data')
 
 args = parser.parse_args()
 
@@ -19,50 +18,17 @@ def COUNT(v):
         return 2
     return 1
 
-def calcBetaLP(T, K, matches):
-    estimator = Model("estimate beta vals")
-    alpha = {}
-    beta = {}
-    for i in range(1,K+1):
-        if any(k[0] == i+T for k in matches):
-            beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
-        elif any(k[1] == i for k in matches if k[0] > T):
-            beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
-        elif any(k[2] == i for k in matches if k[0] > T):
-            beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
-    if args.quality:
-        estimator.addConstrs((matches[t,i,j] - beta[i] -beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in range(T+1,T+K+1) if t-T in beta for i in beta \
-                for j in beta if (t,i,j) in matches), 'something')
-    else:
-        estimator.addConstrs((COUNT((t,i,j)) - beta[i] - beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 for t in range(T+1,T+K+1) if t-T in beta for i in beta \
-                for j in beta if (t,i,j) in matches), 'something')
-    obj = quicksum(beta[i] for i in beta)
-    estimator.setObjective(obj, GRB.MINIMIZE)
-    estimator.optimize()
-    newBeta = {i:beta[i].X for i in beta}
-    for i in range(1, K+1):
-        if i not in newBeta:
-            newBeta[i] = 0
-    return newBeta
-
-
 results = []
     
 for fn in args.inputFiles:
     with open(fn, 'rb') as f:
         d = pickle.load(f)
     #T is number of compatible pairs
-    K = d[0]
+    T = d[0]
     #K is number of incompatible pairs
-    T = d[1]
-    matches = d[3]
-    demo = d[4]
-    if args.graph_state:
-        beta = calcBetaLP(T,K,matches)
-        for i in beta:
-            demo[i+T-1] = list(demo[i+T-1])
-            demo[i+T-1].append(beta[i])
-
+    K = d[1]
+    matches = d[4]
+    demo = d[5]
     
     model = Model("Dual Optimizer")
     

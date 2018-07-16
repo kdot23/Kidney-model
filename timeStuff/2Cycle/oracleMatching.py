@@ -34,8 +34,8 @@ for fn in args.inputFiles:
     num_incompat = d[0]
     num_compat = d[1]
     num_pairs = num_incompat + num_compat
-    matches = d[2]
-    directed_matches = d[6]
+    matches = d[3]
+    directed_matches = d[7]
     T = num_compat
     model = Model('Kideny Optimizer')
     matchVars = {}

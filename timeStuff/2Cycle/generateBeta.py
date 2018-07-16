@@ -26,8 +26,8 @@ for fn in args.inputFiles:
     T = d[0]
     #K is number of incompatible pairs
     K = d[1]
-    matches = d[2]
-    demo = d[4]
+    matches = d[3]
+    demo = d[5]
     
     model = Model("Dual Optimizer")
     

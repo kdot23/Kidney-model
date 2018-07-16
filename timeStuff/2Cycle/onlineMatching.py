@@ -33,7 +33,7 @@ parser.add_argument('--graph', help='stem of output file for graph')
 parser.add_argument('--lpEstimator', action='store_true', help='flag should be present if dual on incompatible pool only should be \
         used to estimate beta values')
 parser.add_argument('--lpRepeat', action='store_true', help='flag should be present if lp repeat method is used to estimate betas')
-parser.add_argument('-q', '--cadence', default = 1)
+parser.add_argument('-q', '--cadence', default = 1, type=int)
 args = parser.parse_args()
 
 
@@ -64,7 +64,7 @@ def getBloodTypes(demo):
         bd = 3
     return br,bd
 
-def calcBetasLP(C,matches, available_incompat):
+def calcBetasLP(C, matches, available_incompat):
     estimator = Model('estimate beta values')
     beta = {}
     for i in available_incompat:
@@ -129,48 +129,73 @@ for fn in args.testFiles:
     directed_matches = data[7]
     departure_times = data[8]
     available_incompat = set()
-    arriving_compat
+    unmatched_incompat = set()
+    arriving_compat = {}
     arriving_incompat = {}
+    lastBeta = {}
     count = 0
     quality = 0
     for i in range(C):
-        if demo[i][-1] not in arriving_compat:
-            arriving_compat[demo[i][-1]] = []
-        arriving_compat[demo[i][-1]].append(i+1)
+        if demo[i][20] not in arriving_compat:
+            arriving_compat[demo[i][20]] = []
+        arriving_compat[demo[i][20]].append(i+1)
     for i in range(C,C+I):
-        if demo[i][-1] not in arriving_incompat:
-            arriving_incompat[demo[i][-1]] = set()
-        arriving_incompat[demo[i][-1]].add(i+1-C)
+        if demo[i][20] not in arriving_incompat:
+            arriving_incompat[demo[i][20]] = set()
+        arriving_incompat[demo[i][20]].add(i+1-C)
 
     for t in range(T):
+        departing_incompat = set()
         for i in available_incompat:
             if departure_times[i-1] < t:
-                available_incompat.remove(i)
+                departing_incompat.add(i)
+        available_incompat = available_incompat.difference(departing_incompat)
+        unmatched_incompat = unmatched_incompat.union(set((i,lastBeta[i]) for i in departing_incompat))
         if t in arriving_incompat:
             available_incompat = available_incompat.union(arriving_incompat[t])
 
 
+        if args.lpEstimator or args.lpRepeat:
+             #update betas one way
+             beta = calcBetasLP(C, matches, available_incompat)
+        else:
+            #update betas another way
+            beta = {}
+            for i in available_incompat:
+                testValue = [[demo[i+C-1][v] for v in varsUsed]]
+                testValue = poly.fit_transform(testValue)
+                beta[i] = LR.predict(testValue)[0]
+        beta[0] = 0
+        lastBeta = beta
 
         if t in arriving_compat:
             #update betas
-            if args.lpEstimator or args.lpRepeat:
-                #update betas one way
-            else:
-                #update betas another way
 
             #Do compatible mathcing stuff
             for i in arriving_compat[t]:
-                values = {j:matches[i,j]-beta[j] for j in available_incompat.union(set([0]))}
+                if args.quality:
+                    values = {j:matches[i,j]-beta[j] for j in available_incompat.union(set([0])) if (i,j) in matches }
+                else:
+                    values = {j:COUNT((i,j))-beta[j] for j in available_incompat.union(set([0])) if (i,j) in matches}
                 max_index = max(values, key=values.get)
                 if max_index == 0:
                     count += 1
+                    agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[i,0]) + "\t" \
+                    + "C" + "\t" + str(directed_matches[i,0]) + "\t" + "C" + "\t" + str(0) + "\n"
                 else:
                     available_incompat.remove(max_index)
                     count += 2
+                    agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[i,max_index+C]) + "\t" + "I" + "\t" + str(0) + "\n"
+                    agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i,max_index+C]) + "\t" \
+                    + "C" + "\t" + str(directed_matches[max_index+C,i]) + "\t" + "C" + "\t" + str(beta[max_index]) + "\n"
+                    if args.lpRepeat:
+                        beta = calcBetasLP(C, matches, available_incompat)
+                        beta[0] = 0
                 quality += matches[i,max_index]
 
 
-        if (t+1)%args.cadence==0:
+        if (t)%args.cadence==0:
             #Do incompatible matching stuff
             model = Model('blargh')
             matchVars = {}
@@ -195,11 +220,24 @@ for fn in args.testFiles:
                     available_incompat.remove(v[0]-C)
                     available_incompat.remove(v[1])
                     #Agent Info Stuff
+                    agentInfo += "I" + str(v[0]-C) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(beta[v[0]-C]) + "\n"
+                    agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\n"
+    unmatched_incompat = unmatched_incompat.union(set((i,lastBeta[i]) for i in available_incompat))
+    for a in unmatched_incompat:
+        i = a[0]
+        b = a[1]
+        agentInfo += "I" + str(i) + "\t" + str(T) + "\t" + str(0) + "\t" \
+        + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(b) + "\n"
+
+    results += str(count) + '\t' + str(quality) + '\n'
 
 
 
 
     
+    """
     testValues = [[demo[i][v] for v in varsUsed] for i in range(T,T+K)]
     X2 = poly.fit_transform(testValues)
     if not (args.lpEstimator or args.lpRepeat):
@@ -303,6 +341,7 @@ for fn in args.testFiles:
             f.write(graph)
         os.system('dot -Tpdf ' + args.graph + str(dataIndex) +'.gv -o ' + args.graph + str(dataIndex) + '.pdf')
     dataIndex += 1
+    """
     
 if args.output:
     with open(args.output, 'w') as f:
