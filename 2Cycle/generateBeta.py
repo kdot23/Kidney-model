@@ -51,10 +51,7 @@ for fn in args.inputFiles:
     matches = d[2]
     demo = d[4]
     if args.graph_state:
-        beta = calcBetasLP(T,K,matches)
-        for i in beta:
-            demo[i+T-1] = list(demo[i+T-1])
-            demo[i+T-1].append(beta[i])
+        lpbeta = calcBetasLP(T,K,matches)
     
     model = Model("Dual Optimizer")
     
@@ -83,9 +80,13 @@ for fn in args.inputFiles:
     obj = quicksum(alpha[t] for t in alpha) + quicksum(beta[i] for i in beta)
     model.setObjective(obj, GRB.MINIMIZE)
     model.optimize()
-    
-    for i in range(1,K+1):
-        results.append((demo[i+T-1], (beta[i].X if i in beta else 0)))
+
+    if args.graph_state:
+        for i in range(1,K+1):
+            results.append((demo[i+T-1], (beta[i].X if i in beta else 0), lpbeta[i]))
+    else:
+        for i in range(1,K+1):
+            results.append((demo[i+T-1], (beta[i].X if i in beta else 0)))
 
 if args.output:
     with open(args.output, 'w') as f:
