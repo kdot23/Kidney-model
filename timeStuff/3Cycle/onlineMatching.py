@@ -34,6 +34,9 @@ parser.add_argument('--lpEstimator', action='store_true', help='should be presen
         estimate betas')
 parser.add_argument('--lpRepeat', action='store_true', help='should be present if lp repeat method is used to estimate betas')
 parser.add_argument('-q', '--cadence', default=1, type=int)
+parser.add_argument('--incompatible_online', type=float, help='threshhold for probability an incompatible stays before it is matched')
+parser.add_argument('--gamma', default=.9, type=float, help='gamma value used for calculating survival')
+parser.add_argument('--graph_state', action='store_true', help='Flag should be present if online LP estimation is included in training data')
 args = parser.parse_args()
 
 
@@ -108,7 +111,10 @@ if args.trainFiles:
     
     for d in data:
         demo = d[0]
-        values.append([demo[v] for v in varsUsed])
+        if args.graph_state:
+            values.append([demo[v] for v in varsUsed] + [d[2]])
+        else:
+            values.append([demo[v] for v in varsUsed])
         labels.append(d[1])
     
     poly = PolynomialFeatures(degree=args.degree)
@@ -137,6 +143,7 @@ for fn in args.testFiles:
     unmatched_incompat = set()
     arriving_incompat = {}
     arriving_compat = {}
+    num_rounds_present = {}
 
     count = 0
     quality = 0
@@ -156,18 +163,28 @@ for fn in args.testFiles:
         for i in available_incompat:
             if departure_times[i-1] < t:
                 departing_incompat.add(i)
+                del num_rounds_present[i]
         available_incompat = available_incompat.difference(departing_incompat)
         unmatched_incompat = unmatched_incompat.union(set((i,lastBeta[i]) for i in departing_incompat))
+        for i in available_incompat:
+            num_rounds_present[i] += 1
 
         if t in arriving_incompat:
             available_incompat = available_incompat.union(arriving_incompat[t])
+            for i in arriving_incompat[t]:
+                num_rounds_present[i] = 0
 
         if args.lpEstimator or args.lpRepeat:
             beta = calcBetaLP(C, matches, available_incompat)
         else:
             beta = {}
+            if args.graph_state:
+                lpBeta = calcBetaLP(C, matches, available_incompat)
             for i in available_incompat:
-                testValue = [[demo[i-1][v] for v in varsUsed]]
+                if args.graph_state:
+                    testValue = [[demo[i-1][v] for v in varsUsed] + [lpBeta[i]]]
+                else:
+                    testValue = [[demo[i-1][v] for v in varsUsed]]
                 testValue = poly.fit_transform(testValue)
                 beta[i] = LR.predict(testValue)[0]
         beta[0] = 0
@@ -209,7 +226,21 @@ for fn in args.testFiles:
                     beta[0] = 0
 
 
-        if t%args.cadence == 0:
+        if args.incompatible_online:
+            probs = {i:demo[i+C-1][19]*args.gamma**num_rounds_present[i] for i in available_incompat}
+            for i in probs:
+                if i not in available_incompat: continue
+                if probs[i] < args.incompatible_online:
+                    values = {(i+C,j,k):matches[i+C,j, k] - beta[j] - beta[k] for j in available_incompat for k in available_incompat if (i+C,j,k) in matches}
+                    if len(values) == 0: continue
+                    max_index = max(values, key=values.get)
+                    if values[max_index] > 0:
+                        available_incompat.remove(i)
+                        available_incompat.remove(max_index[1])
+                        available_incompat.remove(max_index[2])
+                        quality += matches[max_index]
+                        count += COUNT(max_index)
+        if args.cadence and t%args.cadence == 0:
             model = Model('blargh')
             matchVars = {}
             for i in available_incompat:
