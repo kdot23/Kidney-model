@@ -6,6 +6,7 @@ import numpy as np
 from sets import Set
 import os
 import pulp
+from pulp import lpSum
 
 parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file using a simple greedy algorithm")
 parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="List of .dat files to be used as input. List of number of \
@@ -146,11 +147,12 @@ for fn in args.inputFiles:
             for i in range(1,I+1):
                 model += lpSum(x[t,i] for t in range(C+1,C+I+1) if (t,i) in matchVars) + lpSum(x[i+C,j] for j in range(1,I+1) if (i+C,j) in matchVars) <= 1, 'symetry '+str(i) 
             model.solve()
-            count += sum(COUNT(v)*x[v] for v in matchVars)
-            quality += sum(matches[v]*x[v] for v in matchVars)
+            count += sum(COUNT(v)*x[v].value() for v in matchVars)
+            quality += sum(matches[v]*x[v].value() for v in matchVars)
 
             for v in matchVars:
-                if round(x[v]) != 0:
+                print x[v].value()
+                if round(x[v].value()) != 0:
                     available_incompat.remove(v[0]-C)
                     available_incompat.remove(v[1])
                     #Agent Info Stuff
