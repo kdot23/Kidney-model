@@ -33,7 +33,10 @@ parser.add_argument('--graph', help='stem of output file for graph')
 parser.add_argument('--lpEstimator', action='store_true', help='flag should be present if dual on incompatible pool only should be \
         used to estimate beta values')
 parser.add_argument('--lpRepeat', action='store_true', help='flag should be present if lp repeat method is used to estimate betas')
-parser.add_argument('-q', '--cadence', default = 1, type=int)
+parser.add_argument('-q', '--cadence',  type=int)
+parser.add_argument('--incompatible_online', type=float, help='threshhold for probability an incompatible stays before it is matched')
+parser.add_argument('--gamma', default=.9, type=float, help='gamma value used for calculating survival')
+parser.add_argument('--graph_state', action='store_true', help='Flag should be present if lp estimator beta values is used for training')
 args = parser.parse_args()
 
 
@@ -103,7 +106,10 @@ if not (args.lpEstimator or args.lpRepeat):
 
     for d in data:
         demo = d[0]
-        values.append([demo[v] for v in varsUsed])
+        if args.graph_state:
+            values.append([demo[v] for v in varsUsed] + [d[2]])
+        else: 
+            values.append([demo[v] for v in varsUsed])
         labels.append(d[1])
 
     poly = PolynomialFeatures(degree=args.degree)
@@ -132,6 +138,7 @@ for fn in args.testFiles:
     unmatched_incompat = set()
     arriving_compat = {}
     arriving_incompat = {}
+    num_rounds_present = {}
     lastBeta = {}
     count = 0
     quality = 0
@@ -149,10 +156,15 @@ for fn in args.testFiles:
         for i in available_incompat:
             if departure_times[i-1] < t:
                 departing_incompat.add(i)
+                del num_rounds_present[i]
         available_incompat = available_incompat.difference(departing_incompat)
         unmatched_incompat = unmatched_incompat.union(set((i,lastBeta[i]) for i in departing_incompat))
+        for i in available_incompat:
+            num_rounds_present[i] += 1
         if t in arriving_incompat:
             available_incompat = available_incompat.union(arriving_incompat[t])
+            for i in arriving_incompat[t]:
+                num_rounds_present[i] = 0
 
 
         if args.lpEstimator or args.lpRepeat:
@@ -161,8 +173,13 @@ for fn in args.testFiles:
         else:
             #update betas another way
             beta = {}
+            if args.graph_state:
+                lpBeta = calcBetasLP(C, matches, available_incompat)
             for i in available_incompat:
-                testValue = [[demo[i+C-1][v] for v in varsUsed]]
+                if args.graph_state:
+                    testValue = [[demo[i+C-1][v] for v in varsUsed] + [lpBeta[i]]]
+                else:
+                    testValue = [[demo[i+C-1][v] for v in varsUsed]]
                 testValue = poly.fit_transform(testValue)
                 beta[i] = LR.predict(testValue)[0]
         beta[0] = 0
@@ -195,7 +212,24 @@ for fn in args.testFiles:
                 quality += matches[i,max_index]
 
 
-        if (t)%args.cadence==0:
+        if args.incompatible_online:
+            probs = {i:demo[i+C-1][19]*args.gamma**num_rounds_present[i] for i in available_incompat}
+            for i in probs:
+                if i not in available_incompat: continue
+                if probs[i] < args.incompatible_online:
+                    values = {j:matches[i+C,j] - beta[j] for j in available_incompat if (i+C,j) in matches}
+                    if len(values) == 0: continue
+                    max_index = max(values, key=values.get)
+                    if values[max_index] > 0:
+                        available_incompat.remove(i)
+                        available_incompat.remove(max_index)
+                        quality += matches[i+C,max_index]
+                        count += COUNT((i+C,max_index))
+                        agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" \
+                        + "I" + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" + "I" + "\t" + str(beta[i]) + "\n"
+                        agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" \
+                        + "I" + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" + "I" + "\t" + str(beta[max_index]) + "\n"
+        if args.cadence and (t)%args.cadence==0:
             #Do incompatible matching stuff
             model = Model('blargh')
             matchVars = {}

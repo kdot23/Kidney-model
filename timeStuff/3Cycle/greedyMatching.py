@@ -17,7 +17,9 @@ parser.add_argument('-o', '--output', help='write results to this file (.csv)')
 parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
 parser.add_argument("-n", type = int, default = 2, help = "max number of connections incompatibles can be matched to and still removed from pool")
 parser.add_argument("--graph", help = "output a graphviz representation")
-parser.add_argument('-q', '--cadence', default=1, type=int)
+parser.add_argument('-q', '--cadence',  type=int)
+parser.add_argument('--incompatible_online', type=float, help='threshhold for probability an incompatible stays before it is matched')
+parser.add_argument('--gamma', default=.9, type=float, help='gamma value used for calculating survival')
 args=parser.parse_args()
 
 graph_colors = ["red", "blue", "green", "black"]
@@ -122,7 +124,33 @@ for fn in args.inputFiles:
                     + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "C" + "\n"
                 quality += matches[max_index]
 
-        if t%args.cadence==0:
+        if args.incompatible_online:
+            probs = {i:demo[i+C-1][19]*args.gamma**num_rounds_present[i] for i in available_incompat}
+            for i in probs:
+                if i not in available_incompat: continue
+                if probs[i] < args.incompatible_online:
+                    values = {(i+C,j,k):matches[i+C,j, k] for j in available_incompat for k in available_incompat if (i+C,j,k) in matches}
+                    if len(values) == 0: continue
+                    max_index = max(values, key=values.get)
+                    if values[max_index] > 0:
+                        available_incompat.remove(i)
+                        available_incompat.remove(max_index[1])
+                        quality += matches[max_index]
+                        count += COUNT(max_index)
+                        if max_index[2] == 0:
+                            agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" \
+                            + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\n"
+                            agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
+                            + "I" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "I" + "\n"
+                        else:
+                            available_incompat.remove(max_index[2])
+                            agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" \
+                            + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\n"
+                            agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
+                            + "I" + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" + "I" + "\n"
+                            agentInfo += "I" + str(max_index[2]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" \
+                            + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "I" + "\n"
+        if args.cadence and t%args.cadence==0:
             #Do incompatible matching stuff
             model = Model('blargh')
             matchVars = {}
