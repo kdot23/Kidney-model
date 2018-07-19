@@ -3,10 +3,11 @@
 import json
 import pickle
 import argparse
-from gurobipy import *
 import numpy as np
 from sets import Set
 import os
+import pulp
+from pulp import lpSum
 
 parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file using a simple greedy algorithm")
 parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="List of .dat files to be used as input. List of number of \
@@ -152,29 +153,30 @@ for fn in args.inputFiles:
                             + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "I" + "\n"
         if args.cadence and t%args.cadence==0:
             #Do incompatible matching stuff
-            model = Model('blargh')
-            matchVars = {}
-            for i in available_incompat:
-                for j in available_incompat:
-                    for k in available_incompat:
-                        if (i+C,j,k) not in matches: continue
-                        matchVars[i+C,j,k] = model.addVar(vtype = GRB.BINARY,  name = "match_" + str((i+C,j,k)))
-            model.addConstrs((quicksum(matchVars[t,i,j] for i in range(1,I+1) for j in range(1,I+1) if (t,i,j) in matchVars) <= 1 for t in range(C+1,C+I+1)), "only match with one other pair")
-            model.addConstrs((quicksum(matchVars[t,i,j] for t in range(C+1,C+I+1) for j in range(1,I+1) if (t,i,j) in matchVars) + \
-                    quicksum(matchVars[t,j,i] for t in range(C+1,C+I+1) for j in range(1,I+1) if (t,j,i) in matchVars) +
-                    quicksum(matchVars[i+C,j,k] for j in range(1, I+1) for k in range(1,I+1) if (i+C,j,k) in matchVars) <= 1 \
-                    for i in range(1,I+1)), "symmetry") 
+            model = pulp.LpProblem('incompatible matching', pulp.LpMaximize)
+            matchVars = [(i+C,j,k) for i in available_incompat for j in available_incompat for k in available_incompat \
+                    if (i+C,j,k) in matches]
+            x = pulp.LpVariable.dicts('match',matchVars,lowBound = 0, upBound = 1, cat = pulp.LpInteger)
+            matchVars = set(matchVars)
             if args.quality:
-                obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
+                model += lpSum(x[v]*matches[v] for v in matchVars)
             else:
-                obj = quicksum(matchVars[v]*COUNT(v) for v in matchVars)
-            model.setObjective(obj, GRB.MAXIMIZE) 
-            model.optimize()
-            count += sum(COUNT(v)*matchVars[v].X for v in matchVars)
-            quality += sum(matches[v]*matchVars[v].X for v in matchVars)
+                model += lpSum(x[v]*COUNT(v) for v in matchVars)
+            for t in available_incompat:
+                model += lpSum(x[t+C,i,j] for i in available_incompat for j in available_incompat if (t+C,i,j) in matchVars) <= 1,\
+                        'match with one '+str(t)
+            for i in available_incompat:
+                model += lpSum(x[t+C,i,j] for t in available_incompat for j in available_incompat if (t+C,i,j) in matchVars) + \
+                        lpSum(x[t+C,j,i] for t in available_incompat for j in available_incompat if (t+C,j,i) in matchVars) + \
+                        lpSum(x[i+C,j,k] for j in available_incompat for k in available_incompat if (i+C,j,k) in matchVars) <= 1, \
+                        'symetry ' + str(i)
+
+            model.solve()
+            count += sum(COUNT(v)*x[v].value() for v in matchVars)
+            quality += sum(matches[v]*x[v].value() for v in matchVars)
 
             for v in matchVars:
-                if round(matchVars[v].X) != 0:
+                if round(x[v].value()) != 0:
                     available_incompat.remove(v[0]-C)
                     available_incompat.remove(v[1])
                     if v[2] == 0:
