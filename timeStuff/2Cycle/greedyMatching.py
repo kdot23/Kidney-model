@@ -142,16 +142,15 @@ for fn in args.inputFiles:
                 model += lpSum(x[v]*matches[v] for v in matchVars)
             else:
                 model += lpSum(x[v]*COUNT(v) for v in matchVars)
-            for t in range(C+1,C+I+1):
-                model += lpSum(x[t,i] for i in range(1,I+1) if (t,i) in matchVars) <= 1, 'compatible match with 1 for '+str(t) 
-            for i in range(1,I+1):
-                model += lpSum(x[t,i] for t in range(C+1,C+I+1) if (t,i) in matchVars) + lpSum(x[i+C,j] for j in range(1,I+1) if (i+C,j) in matchVars) <= 1, 'symetry '+str(i) 
+            for t in available_incompat:
+                model += lpSum(x[t+C,i] for i in available_incompat if (t+C,i) in matchVars) <= 1, 'compatible match with 1 for '+str(t) 
+            for i in available_incompat:
+                model += lpSum(x[t+C,i] for t in available_incompat if (t+C,i) in matchVars) + lpSum(x[i+C,j] for j in available_incompat if (i+C,j) in matchVars) <= 1, 'symetry '+str(i) 
             model.solve()
             count += sum(COUNT(v)*x[v].value() for v in matchVars)
             quality += sum(matches[v]*x[v].value() for v in matchVars)
 
             for v in matchVars:
-                print x[v].value()
                 if round(x[v].value()) != 0:
                     available_incompat.remove(v[0]-C)
                     available_incompat.remove(v[1])
