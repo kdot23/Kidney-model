@@ -14,8 +14,9 @@ Returns count and quality for each population allowing cycles of up to three pai
 """
 import pickle
 import argparse
-from gurobipy import *
 import numpy as np
+import pulp
+from pulp import lpSum
 
 parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file")
 parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="list of .dat files to be used as input. List of number of \
@@ -46,36 +47,37 @@ for fn in args.inputFiles:
     matches = d[4]
     directed_matches = d[7]
     T = num_compat
-    model = Model('Kideny Optimizer')
-    matchVars = {}
-    for v in matches:
-        if args.incompatibleOnly and v[0] <= T: continue
-        matchVars[v] = model.addVar(vtype = GRB.BINARY, lb = 0, ub=1,  name = "match_" + str(v))
-    
-    model.addConstrs((quicksum(matchVars[t,i,j] for i in range(num_incompat+1) for j in range(num_incompat+1) if (t,i,j) in matchVars) <= 1 \
-                      for t in range(1,num_pairs+1)), "Only match with one pair")
-    
-    model.addConstrs((quicksum(matchVars[t,i,j] for t in range(1,num_pairs+1) for j in range(num_incompat+1) if (t,i,j) in matchVars) \
-                     + quicksum(matchVars[t,j,i] for t in range(1,num_pairs+1) for j in range(1, num_incompat+1) if (t,j,i) in matchVars)\
-                     + quicksum(matchVars[i+T,j,jp] for j in range(1,num_incompat+1) for jp in range(num_incompat+1) if (i+T,j,jp) in matchVars)\
-                     <= 1 for i in range(1,num_incompat+1)), "undirected graph")
-
+    model = pulp.LpProblem('match everyone', pulp.LpMaximize)
+    if args.incompatibleOnly:
+        matchVars = [v for v in matches if v[0] > T]
+    else:
+        matchVars = [v for v in matches]
+    x = pulp.LpVariable.dicts('match',matchVars,lowBound=0, upBound=1, cat=pulp.LpInteger)
+    matchVars = set(matchVars)
     if (args.quality):
-        obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
+        model += lpSum(x[v]*matches[v] for v in matchVars)
 
     else:
-        obj = quicksum(COUNT(v)*matchVars[v] for v in matchVars)
-        count = obj
+        model += lpSum(x[v]*COUNT(v) for v in matchVars)
+    
+    for t in range(1,num_pairs+1):
+        model += lpSum(x[t,i,j] for i in range(num_incompat+1) for j in range(num_incompat+1) if (t,i,j) in matchVars) <= 1
+    
+    for i in range(1,num_incompat+1):
+        model += lpSum(x[t,i,j] for t in range(1,num_pairs+1) for j in range(num_incompat+1) if (t,i,j) in matchVars) + \
+                lpSum(x[t,j,i] for t in range(1,num_pairs+1) for j in range(1, num_incompat+1) if (t,j,i) in matchVars) + \
+                lpSum(x[i+T,j,jp] for j in range(1,num_incompat+1) for jp in range(num_incompat+1) if (i+T,j,jp) in matchVars) <= 1, \
+                'symetry ' + str(i)
+
         
-    model.setObjective(obj, GRB.MAXIMIZE) 
-    model.optimize()
+    model.solve()
     
     if (args.incompatibleOnly):
-        quality = sum(matchVars[v].X*matches[v] for v in matchVars) + sum(matches[(v,0,0)] for v in range(1,num_compat+1))
-        count = sum(COUNT(v)*matchVars[v].X for v in matchVars) + num_compat
+        quality = sum(x[v].value()*matches[v] for v in matchVars) + sum(matches[(v,0,0)] for v in range(1,num_compat+1))
+        count = sum(COUNT(v)*x[v].value() for v in matchVars) + num_compat
     else:
-        quality = sum(matchVars[v].X*matches[v] for v in matchVars)
-        count = sum(COUNT(v)*matchVars[v].X for v in matchVars)
+        quality = sum(x[v].value()*matches[v] for v in matchVars)
+        count = sum(COUNT(v)*x[v].value() for v in matchVars)
     
     results += str(count) + "\t" + str(quality) + "\n"
 
@@ -83,7 +85,7 @@ for fn in args.inputFiles:
     used_incompat = set()
 
     for v in matchVars:
-        if round(matchVars[v].X) != 0:
+        if round(x[v].value()) != 0:
             #if there is a compatible pair in the match
             if (v[0] <= T):
                 #if compatible matched with itself

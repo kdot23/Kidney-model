@@ -9,12 +9,13 @@ Output is csv format of optimal count and quality for the population.
 import argparse
 import json
 import pickle
-from gurobipy import *
 import random
 from sklearn import linear_model
 from sklearn import ensemble
 from sklearn.preprocessing import PolynomialFeatures
 import os
+import pulp
+from pulp import lpSum
 
 
 
@@ -68,23 +69,24 @@ def getBloodTypes(demo):
     return br,bd
 
 def calcBetasLP(C, matches, available_incompat):
-    estimator = Model('estimate beta values')
-    beta = {}
-    for i in available_incompat:
-        if any(k[0] == i+C for k in matches if k[1]  in available_incompat) or any(k[1] == i for k in matches if k[0] > C \
-                and k[0]-C  in available_incompat):
-            beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, \
-                    name='beta_'+str(i))
+    posBetas = [i for i in available_incompat if any(k[0] == i+C for k in matches if k[1] in available_incompat) or \
+            any(k[1] == i for k in matches if k[0] > C and k[0]-C in available_incompat)]
+    beta = pulp.LpVariable.dicts('beta', posBetas, lowBound = 0)
+    posBetas = set(posBetas)
+    estimator = pulp.LpProblem('Estimate Betas', pulp.LpMinimize)
+    estimator += lpSum(beta[i] for i in posBetas)
     if args.quality:
-        estimator.addConstrs((matches[t+C,i] -  beta[i] -  (beta[t] if t in beta else 0) <= 0 \
-                for t in beta for i in beta if (t+C,i) in matches),  'something...')
+        for t in posBetas:
+            for i in posBetas:
+                if (t+C,i) not in matches: continue
+                estimator += matches[t+C,i] - beta[i] - beta[t] <= 0, 'beta qual ' + str((t,i))
     else:
-        estimator.addConstrs((COUNT((t+C,i)) - beta[i] - (beta[t] if t in beta else 0) <= 0 \
-                for t in beta for i in beta if (t+C,i) in matches), 'something...')
-    obj = quicksum(beta[i] for i in beta)
-    estimator.setObjective(obj, GRB.MINIMIZE)
-    estimator.optimize()
-    newBeta =  {i:beta[i].X for i in beta}
+        for t in posBetas:
+            for i in posBetas:
+                if (t+C,i) not in matches: continue
+                estimator += COUNT((t+C,i)) - beta[i] - beta[t] <= 0, 'beta qual ' + str((t,i))
+    estimator.solve()
+    newBeta =  {i:beta[i].value() for i in posBetas}
     for i in available_incompat:
         if i not in newBeta:
             newBeta[i] = 0
@@ -234,26 +236,25 @@ for fn in args.testFiles:
                         str(demo[max_index+C][20]) + "\t" + str(departure_times[max_index-1])+ "\n"
         if args.cadence and (t)%args.cadence==0:
             #Do incompatible matching stuff
-            model = Model('blargh')
-            matchVars = {}
-            for i in available_incompat:
-                for j in available_incompat:
-                    if (i+C,j) not in matches: continue
-                    matchVars[i+C,j] = model.addVar(vtype = GRB.BINARY,  name = "match_" + str((i+C,j)))
-            model.addConstrs((quicksum(matchVars[t,i] for i in range(1,I+1) if (t,i) in matchVars) <= 1 for t in range(C,C+I+1)), "only match with one other pair")
-            model.addConstrs((quicksum(matchVars[t,i] for t in range(C,C+I+1) if (t,i) in matchVars) + quicksum(matchVars[i+C,j] for j in range(1, I+1) \
-                               if (i+C,j) in matchVars) <= 1 for i in range(1,I+1)), "symmetry")
+            model = pulp.LpProblem('incompatible matching', pulp.LpMaximize)
+            matchVars = [(i+C,j) for i in available_incompat for j in available_incompat if (i+C,j) in matches]
+            x = pulp.LpVariable.dicts('match', matchVars, lowBound = 0, upBound = 1, cat = pulp.LpInteger)
+            matchVars = set(matchVars)
             if args.quality:
-                obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
+                model += lpSum(x[v]*matches[v] for v in matchVars)
             else:
-                obj = quicksum(matchVars[v]*COUNT(v) for v in matchVars)
-            model.setObjective(obj, GRB.MAXIMIZE) 
-            model.optimize()
-            count += sum(COUNT(v)*matchVars[v].X for v in matchVars)
-            quality += sum(matches[v]*matchVars[v].X for v in matchVars)
+                model += lpSum(x[v]*COUNT(v) for v in matchVars)
+            for t in available_incompat:
+                model += lpSum(x[t+C,i] for i in available_incompat if (t+C,i) in matchVars) <= 1, 'only match with 1 '+str(t)
+            for i in available_incompat:
+                model += lpSum(x[t+C,i] for t in available_incompat if (t+C,i) in matchVars) + lpSum(x[i+C,j] for j in available_incompat \
+                        if (i+C,j) in matchVars) <= 1, 'symetry '+str(i)
+            model.solve()
+            count += sum(COUNT(v)*x[v].value() for v in matchVars)
+            quality += sum(matches[v]*x[v].value() for v in matchVars)
 
             for v in matchVars:
-                if round(matchVars[v].X) != 0:
+                if round(x[v].value()) != 0:
                     available_incompat.remove(v[0]-C)
                     available_incompat.remove(v[1])
                     #Agent Info Stuff
