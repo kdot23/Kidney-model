@@ -264,19 +264,19 @@ for fn in args.testFiles:
             else:
                 model += lpSum(x[v]*COUNT(V) for v in matchVars)
             for t in available_incompat:
-                model += lpSum
-            model.addConstrs((quicksum(matchVars[t,i,j] for i in range(1,I+1) for j in range(1,I+1) if (t,i,j) in matchVars) <= 1 for t in range(C+1,C+I+1)), "only match with one other pair")
-            model.addConstrs((quicksum(matchVars[t,i,j] for t in range(C+1,C+I+1) for j in range(1,I+1) if (t,i,j) in matchVars) + \
-                    quicksum(matchVars[t,j,i] for t in range(C+1,C+I+1) for j in range(1,I+1) if (t,j,i) in matchVars) +
-                    quicksum(matchVars[i+C,j,k] for j in range(1, I+1) for k in range(1,I+1) if (i+C,j,k) in matchVars) <= 1 \
-                    for i in range(1,I+1)), "symmetry") 
-            model.setObjective(obj, GRB.MAXIMIZE) 
-            model.optimize()
-            count += sum(COUNT(v)*matchVars[v].X for v in matchVars)
-            quality += sum(matches[v]*matchVars[v].X for v in matchVars)
+                model += lpSum(x[t+C,i,j] for i in available_incompat for j in available_incompat if (t+C,i,j) in matchVars) <= 1,\
+                        'only match with one '+str(t)
+            for i in available_incompat:
+                model += lpSum(x[t+C,i,j] for t in available_incompat for j in available_incompat if (t+C,i,j) in matchVars + \
+                        lpSum(x[t+C,j,i] for t in available_incompat for j in available_incompat if (t+C,j,i) in matchVars + \
+                        lpSum(x[i+C,j,k] for j in available_incompat for k in available_incompat if (i+C,j,k) in matchVars) <= 1, \
+                        'symetry '+str(i)
+            model.solve()
+            count += sum(COUNT(v)*x[v].value() for v in matchVars)
+            quality += sum(matches[v]*x[v].value() for v in matchVars)
 
             for v in matchVars:
-                if round(matchVars[v].X) != 0:
+                if round(x[v].value()) != 0:
                     available_incompat.remove(v[0]-C)
                     available_incompat.remove(v[1])
                     if v[2] == 0:
