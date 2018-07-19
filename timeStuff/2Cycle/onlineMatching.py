@@ -9,7 +9,6 @@ Output is csv format of optimal count and quality for the population.
 import argparse
 import json
 import pickle
-from gurobipy import *
 import random
 from sklearn import linear_model
 from sklearn import ensemble
