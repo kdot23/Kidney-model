@@ -185,24 +185,27 @@ for fn in args.testFiles:
                 if max_index[1] == 0:
                     count += 1
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],0]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[max_index[0],0]) + "\t" + "C" + "\t" + str(0) + "\n"
+                    + "C" + "\t" + str(directed_matches[max_index[0],0]) + "\t" + "C" + "\t" + str(0) + "\t" + str(demo[max_index[0]][20]) + "\t" + str(t) + "\n"
                 elif max_index[2] == 0:
                     count += 2
                     available_incompat.remove(max_index[1])
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(0) + "\n"
+                    + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(0) + "\t" + str(demo[max_index[0]][20]) + "\t" + str(t) +"\n"
                     agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[1]]) + "\n"
+                    + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[1]]) + "\t" + str(demo[max_index[1]+T][20]) + "\t" \
+                    + str(departure_times[max_index[1]-1]) +"\n"
                 else:
                     count += 3
                     available_incompat.remove(max_index[1])
                     available_incompat.remove(max_index[2])
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(0) +  "\n"
+                    + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(0) +  "\t" + str(demo[max_index[0]][20]) + "\t" + str(t) +"\n"
                     agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" + "I" + "\t" + str(beta[max_index[1]]) + "\n"
+                    + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" + "I" + "\t" + str(beta[max_index[1]]) + "\t" + str(demo[max_index[1]+T][20]) \
+                    + "\t" + str(departure_times[max_index[1]-1]) +"\n"
                     agentInfo += "I" + str(max_index[2]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[2]]) + "\n"
+                    + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[2]]) + "\t" + str(demo[max_index[2]+T][20]) \
+                    + "\t" + str(departure_times[max_index[2]-1]) +"\n"
 
                 if args.lpRepeat:
                     beta = calcBetaLP(C, matches, available_incompat)
@@ -237,24 +240,26 @@ for fn in args.testFiles:
                     available_incompat.remove(v[1])
                     if v[2] == 0:
                         agentInfo += "I" + str(v[0]-C) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(beta[v[0]-C]) + "\n"
+                        + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(beta[v[0]-C]) + "\t" + str(demo[max_index[0]+T][20]) + "\t" + str(departure_times[v[0]-1]) +"\n"
                         agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\n"
+                        + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\t" + str(demo[max_index[1]+T][20]) + "\t" + str(departure_times[v[1]-1]) +"\n"
                     else:
                         available_incompat.remove(v[2])
                         agentInfo += "I" + str(v[0]-C) + "\t" + str(t) + "\t" + str(directed_matches[v[2]+C,v[0]]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(beta[v[0]-C]) + "\n"
+                        + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(beta[v[0]-C]) + "\t" + str(demo[max_index[0]+T][20]) + "\t" + str(departure_times[v[0]-1]) + "\n"
                         agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[v[1]+C,v[2]+C]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\n"
+                        + "I" + "\t" + str(directed_matches[v[1]+C,v[2]+C]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\t" \
+                        + str(demo[max_index[1]+T][20]) + "\t" + str(departure_times[v[1]-1]) +"\n"
                         agentInfo += "I" + str(v[2]) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[2]+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[v[2]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[2]]) + "\n"
+                                + "I" + "\t" + str(directed_matches[v[2]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[2]]) + "\t" \
+                                + str(demo[max_index[2]+T][20]) + "\t" + str(departure_times[v[2]-1]) +"\n"
 
     results += str(count) + '\t' + str(quality) + '\n'
     unmatched_incompat = unmatched_incompat.union(set((i,lastBeta[i]) for i in available_incompat))
     for a in unmatched_incompat:
         i = a[0]
         b = a[1]
-        agentInfo += "I" + str(i) + "\t" + str(T) + "\t" + str(0) + "\t" + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(b) +"\n"
+        agentInfo += "I" + str(i) + "\t" + str(T) + "\t" + str(0) + "\t" + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(b) +"\t" + demo[i+T][20] + "\t" + T + "\n"
 
     """
 
