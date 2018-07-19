@@ -225,6 +225,10 @@ for fn in args.testFiles:
                         available_incompat.remove(max_index)
                         quality += matches[i+C,max_index]
                         count += COUNT((i+C,max_index))
+                        agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" \
+                        + "I" + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" + "I" + "\t" + str(beta[i]) + "\n"
+                        agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" \
+                        + "I" + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" + "I" + "\t" + str(beta[max_index]) + "\n"
         if args.cadence and (t)%args.cadence==0:
             #Do incompatible matching stuff
             model = Model('blargh')

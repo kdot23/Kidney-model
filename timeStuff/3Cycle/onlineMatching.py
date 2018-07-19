@@ -237,9 +237,21 @@ for fn in args.testFiles:
                     if values[max_index] > 0:
                         available_incompat.remove(i)
                         available_incompat.remove(max_index[1])
-                        available_incompat.remove(max_index[2])
                         quality += matches[max_index]
                         count += COUNT(max_index)
+                        if v[2] == 0:
+                            agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" \
+                            + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(beta[max_index[0]-C]) + "\n"
+                            agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
+                            + "I" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "I" + "\t" + str(beta[max_index[1]]) + "\n"
+                        else:
+                            available_incompat.remove(max_index[2])
+                            agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" \
+                            + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(beta[max_index[0]-C]) + "\n"
+                            agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
+                            + "I" + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" + "I" + "\t" + str(beta[max_index[1]]) + "\n"
+                            agentInfo += "I" + str(max_index[2]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" \
+                            + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "I" + "\t" + str(beta[max_index[2]]) + "\n"
         if args.cadence and t%args.cadence == 0:
             model = Model('blargh')
             matchVars = {}
