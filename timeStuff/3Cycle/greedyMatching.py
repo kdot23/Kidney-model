@@ -111,24 +111,29 @@ for fn in args.inputFiles:
                 if max_index[1] == 0:
                     count += 1
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],0]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[max_index[0],0]) + "\t" + "C" + "\n"
+                    + "C" + "\t" + str(directed_matches[max_index[0],0]) + "\t" + "C" + '\t' + str(demo[i-1][20]) + '\t' +str(t)  + "\n"
                 elif max_index[2] == 0:
                     available_incompat.remove(max_index[1])
                     count += 2
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\n"
+                    + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + '\t' + str(demo[i-1][20]) +\
+                    '\t' + str(t) + "\n"
                     agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "C" + "\n"
+                    + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "C" + '\t' + str(demo[max_index[1]+C-1][20])\
+                    +'\t' + str(departure_times[max_index[1]-1]) + "\n"
                 else:
                     available_incompat.remove(max_index[1])
                     available_incompat.remove(max_index[2])
                     count += 3
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\n"
+                    + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + '\t' + str(demo[i-1][20]) +\
+                    '\t' + str(t) +"\n"
                     agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" + "I" + "\n"
+                    + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" + "I" + '\t' + str(demo[max_index[1]+C-1][20]) +\
+                     '\t' + str(departure_times[max_index[1]-1]) + "\n"
                     agentInfo += "I" + str(max_index[2]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "C" + "\n"
+                    + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "C" + '\t' + str(demo[max_index[2]+C-1][20]) +\
+                    '\t' + str(departure_times[max_index[2]-1]) + "\n"
                 quality += matches[max_index]
 
         if args.incompatible_online:
@@ -146,17 +151,22 @@ for fn in args.inputFiles:
                         count += COUNT(max_index)
                         if max_index[2] == 0:
                             agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" \
-                            + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\n"
+                            + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + '\t' + str(demo[i+C-1][20]) + \
+                            '\t' + str(departure_times[i-1]) + "\n"
                             agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
-                            + "I" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "I" + "\n"
+                            + "I" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "I" + '\t' + str(demo[max_index[1]+C-1][20]) +\
+                            '\t' + str(departure_times[max_index[1]-1]) + "\n"
                         else:
                             available_incompat.remove(max_index[2])
                             agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" \
-                            + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\n"
+                            + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + '\t' + \
+                            str(demo[i+C-1][20]) + '\t' + str(departure_times[i-1]) +  "\n"
                             agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
-                            + "I" + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" + "I" + "\n"
+                            + "I" + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" + "I" + '\t' +\
+                            str(demo[max_index[1]+C-1][20]) + '\t' + str(departure_times[max_index[1]-1]) + "\n"
                             agentInfo += "I" + str(max_index[2]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" \
-                            + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "I" + "\n"
+                            + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "I" + '\t' + \
+                            str(demo[max_index[2]+C-1][20]) + '\t' + str(departure_times[max_index[2]-1]) + "\n"
         if args.cadence and t%args.cadence==0:
             #Do incompatible matching stuff
             model = pulp.LpProblem('incompatible matching', pulp.LpMaximize)
@@ -187,23 +197,28 @@ for fn in args.inputFiles:
                     available_incompat.remove(v[1])
                     if v[2] == 0:
                         agentInfo += "I" + str(v[0]-C) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\n"
+                        + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + '\t' + str(demo[v[0]-1][20]) +\
+                        '\t' + str(departure_times[v[0]-C-1]) + "\n"
                         agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\n"
+                        + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + '\t' + str(demo[v[1]+C-1][20]) +\
+                        '\t' + str(departure_times[v[1]-1]) + "\n"
                     else:
                         available_incompat.remove(v[2])
                         agentInfo += "I" + str(v[0]-C) + "\t" + str(t) + "\t" + str(directed_matches[v[2]+C,v[0]]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\n"
+                        + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + '\t' + str(demo[v[0]-1][20]) + '\t' +\
+                        str(departure_times[v[0]-C-1]) + "\n"
                         agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[v[1]+C,v[2]+C]) + "\t" + "I" + "\n"
+                        + "I" + "\t" + str(directed_matches[v[1]+C,v[2]+C]) + "\t" + "I" + '\t' + str(demo[v[1]+C-1][20]) + '\t' +\
+                        str(departure_times[v[1]-1]) + "\n"
                         agentInfo += "I" + str(v[2]) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[2]+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[v[2]+C,v[0]]) + "\t" + "I" + "\n"
+                        + "I" + "\t" + str(directed_matches[v[2]+C,v[0]]) + "\t" + "I" + '\t' + str(demo[v[2]+C-1][20]) + '\t' + \
+                        str(departure_times[v[2]-1]) + "\n"
 
     unmatched_incompat = unmatched_incompat.union(available_incompat)
     results += str(count) + '\t' + str(quality) + '\n'
     for i in unmatched_incompat:
         agentInfo += "I" + str(i) + "\t" + str(T) + "\t" + str(0) + "\t" \
-        + "N" + "\t" + str(0) + "\t" + "N" + "\n"
+        + "N" + "\t" + str(0) + "\t" + "N" + '\t' +  str(demo[i+C-1][20]) + '\t' +  str(departure_times[i-1]) + "\n"
 
 
     """
