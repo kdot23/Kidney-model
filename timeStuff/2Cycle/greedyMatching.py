@@ -85,7 +85,7 @@ for fn in args.inputFiles:
         arriving_incompat[demo[i][20]].add(i+1-C)
         
 
-    for t in range(T):
+    for t in range(T+1):
         departing_incompat = set()
         for i in available_incompat:
             if departure_times[i-1] < t:
