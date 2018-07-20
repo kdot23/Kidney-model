@@ -1,8 +1,9 @@
-from gurobipy import *
 import json
 import pickle
 import argparse
 import os
+import pulp
+from pulp import lpSum
 
 parser = argparse.ArgumentParser(description="Computes the dual of our problem")
 parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help='input file to use')
@@ -20,23 +21,23 @@ def COUNT(v):
     return 2
 
 def calcBetasLP(C, matches, available_incompat):
-    estimator = Model('estimate beta values')
-    beta = {}
-    for i in available_incompat:
-        if any(k[0] == i+C for k in matches if k[1]  in available_incompat) or any(k[1] == i for k in matches if k[0] > C \
-                and k[0]-C  in available_incompat):
-            beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, \
-                    name='beta_'+str(i))
+    estimator = pulp.LpProblem("Estimate Betas", pulp.LpMinimize)
+    posBetas = [i for i in available_incompat if any(k[0] == i+C for k in matches if k[1] in available_incompat) or \
+            any(k[1] == i for k in matches if k[0] > C and k[0]-C in available_incompat)]
+    beta = pulp.LpVariable.dicts('beta',posBetas,lowBound=0)
+    estimator += lpSum(beta[i] for i in beta)
     if args.quality:
-        estimator.addConstrs((matches[t+C,i] -  beta[i] -  (beta[t] if t in beta else 0) <= 0 \
-                for t in beta for i in beta if (t+C,i) in matches),  'something...')
+        for t in beta:
+            for i in beta:
+                if (t+C,i) not in matches: continue
+                estimator += matches[t+C,i] - beta[i] -beta[t] <= 0, 'beta const ' + str((t,i))
     else:
-        estimator.addConstrs((COUNT((t+C,i)) - beta[i] - (beta[t] if t in beta else 0) <= 0 \
-                for t in beta for i in beta if (t+C,i) in matches), 'something...')
-    obj = quicksum(beta[i] for i in beta)
-    estimator.setObjective(obj, GRB.MINIMIZE)
-    estimator.optimize()
-    newBeta =  {i:beta[i].X for i in beta}
+        for t in beta:
+            for i in beta:
+                if (t+C,i) not in matches: continue
+                estimator += COUNT((t+C,i)) - beta[i] -beta[t] <= 0, 'beta const ' + str((t,i))
+    estimator.solve()
+    newBeta =  {i:beta[i].value() for i in beta}
     for i in available_incompat:
         if i not in newBeta:
             newBeta[i] = 0
@@ -55,33 +56,30 @@ for fn in args.inputFiles:
     demo = d[5]
     departure_times = d[8]
     
-    model = Model("Dual Optimizer")
+    model = pulp.LpProblem('Calc Betas', pulp.LpMinimize)
+
+    posAlphas = [t for t in range(1,C+1) if any(k[0] == t for k in matches)]
+    posBetas = [i for i in range(1,K+1) if any(k[0] == i+C for k in matches) or any(k[1] == i for k in matches)]
     
-    alpha = {}
-    beta = {}
+    alpha = pulp.LpVariable.dicts('alpha',posAlphas,lowBound=0)
+    beta = pulp.LpVariable.dicts('beta',posBetas,lowBound = 0)
     
-    for t in range(1,C+1):
-        if any(k[0] == t for k in matches):
-            alpha[t] = model.addVar(vtype = GRB.CONTINUOUS, lb=0, name='alpha_'+str(t))
-    
-    for i in range(1,K+1):
-        if any(k[0] == i+C for k in matches):
-            beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
-            continue
-        if any(k[1] == i for k in matches):
-            beta[i] = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name='beta_'+str(i))
     beta[0] = 0
-    
+
+    model += lpSum(alpha[t] for t in alpha) + lpSum(beta[i] for i in beta)
     if args.quality:
-        model.addConstrs((matches[t,i] - (alpha[t] if t in alpha else 0) - beta[i] - (beta[t-C] if t-C in beta else 0) <= 0 for t in range(1,C+K+1) if t in alpha or t-C in beta for i in beta  \
-                if (t,i) in matches), "something...")
+        for t in range(1,C+K+1):
+            for i in beta:
+                if (t,i) not in matches: continue
+                model += matches[t,i] - (alpha[t] if t in alpha else 0) - beta[i] - (beta[t-C] if t-C in beta else 0) <= 0, 'alpha_beta '+str((t,i))
     else:
-        model.addConstrs((COUNT((t,i)) - (alpha[t] if t in alpha else 0) - beta[i] - (beta[t-C] if t-C in beta else 0) <= 0 for t in range(1,C+K+1) if t in alpha or t-C in beta for i in beta \
-                if (t,i) in matches), "something...")
+        for t in range(1,C+K+1):
+            for i in beta:
+                model += COUNT((t,i)) - (alpha[t] if t in alpha else 0) - beta[i] - (beta[t-C] if t-C in beta else 0) <= 0, 'alpha_beta '+str((t,i))
+
     
-    obj = quicksum(alpha[t] for t in alpha) + quicksum(beta[i] for i in beta)
-    model.setObjective(obj, GRB.MINIMIZE)
-    model.optimize()
+    
+    model.solve()
     
     if args.graph_state:
         available_incompat = set()
@@ -105,10 +103,10 @@ for fn in args.inputFiles:
                 available_incompat = available_incompat.union(arriving_incompat[t])
             lpBeta = calcBetasLP(C, matches, available_incompat)
             for i in lpBeta:
-                results.append((demo[i+C-1], (beta[i].X if i in beta else 0), lpBeta[i]))
+                results.append((demo[i+C-1], (beta[i].value() if i in beta else 0), lpBeta[i]))
     else:
         for i in range(1,K+1):
-            results.append((demo[i+C-1], (beta[i].X if i in beta else 0)))
+            results.append((demo[i+C-1], (beta[i].value() if i in beta else 0)))
 
 if args.output:
     with open(args.output, 'w') as f:

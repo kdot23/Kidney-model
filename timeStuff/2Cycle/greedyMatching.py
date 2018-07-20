@@ -70,6 +70,7 @@ for fn in args.inputFiles:
     unmatched_incompat = set()
     arriving_incompat = {}
     arriving_compat = {}
+    num_rounds_present = {}
     
     quality = 0
     count = 0
@@ -89,10 +90,15 @@ for fn in args.inputFiles:
         for i in available_incompat:
             if departure_times[i-1] < t:
                 departing_incompat.add(i)
+                del num_rounds_present[i]
         available_incompat = available_incompat.difference(departing_incompat)
         unmatched_incompat = unmatched_incompat.union(departing_incompat)
+        for i in available_incompat:
+            num_rounds_present[i] += 1
         if t in arriving_incompat:
             available_incompat = available_incompat.union(arriving_incompat[t])
+            for i in arriving_incompat[t]:
+                num_rounds_present[i] = 0
 
 
         if t in arriving_compat:
@@ -103,14 +109,14 @@ for fn in args.inputFiles:
                 if max_index == 0:
                     count += 1
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[i,0]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[i,0]) + "\t" + "C" + "\t" +  "\n"
+                    + "C" + "\t" + str(directed_matches[i,0]) + "\t" + "C" + "\t" + str(demo[i-1][20) + "\t" + str(t) + "\n"
                 else:
                     available_incompat.remove(max_index)
                     count += 2
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[i,max_index+C]) + "\t" + "I" + "\t" +  "\n"
+                    + "I" + "\t" + str(directed_matches[i,max_index+C]) + "\t" + "I" + "\t" + str(demo[i-1][20) + "\t" + str(t) +"\n"
                     agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i,max_index+C]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[max_index+C,i]) + "\t" + "C" + "\t" +  "\n"
+                    + "C" + "\t" + str(directed_matches[max_index+C,i]) + "\t" + "C" + "\t" + str(demo[i+C-1][20) + "\t" + str(departure_times[max_index-1)) + "\n"
                 quality += matches[i,max_index]
 
 
@@ -128,9 +134,9 @@ for fn in args.inputFiles:
                         quality += matches[i+C,max_index]
                         count += COUNT((i+C,max_index))
                         agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" + "I" + "\t" +  "\n"
+                                + "I" + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" + "I" + "\t" + str(demo[i+C-1][20) + "\t" + str(departure_times[i-1]) + "\n"
                         agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" + "I" + "\t" +  "\n"
+                        + "I" + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" + "I" + str(t) + "\t" + str(demo[max_index+C-1][20) + "\t" + str(departure_times[max_index-1]) + "\n"
         if args.cadence and  t%args.cadence==0:
             #do incompatible matching stuff
             matchVars = [(i+C,j) for i in available_incompat for j in available_incompat if (i+C, j) in matches]
@@ -156,14 +162,14 @@ for fn in args.inputFiles:
                     available_incompat.remove(v[1])
                     #Agent Info Stuff
                     agentInfo += "I" + str(v[0]-C) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" +  "\n"
+                    + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(demo[v[0]-1][20) + "\t" + str(departure_times[v[0]-C-1]) + "\n"
                     agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\t" +  "\n"
+                    + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\t" + str(demo[v[1]+C-1][20) + "\t" + str(departure_times[v[1]-1]) +  "\n"
 
     unmatched_incompat = unmatched_incompat.union(available_incompat)
     for i in unmatched_incompat:
         agentInfo += "I" + str(i) + "\t" + str(T) + "\t" + str(0) + "\t" \
-        + "N" + "\t" + str(0) + "\t" + "N" + "\n"
+        + "N" + "\t" + str(0) + "\t" + "N" +  "\t" + str(demo[i+C-1][20) + "\t" + str(departure_times[i-1]) + "\n"
 
     results += str(count) + '\t' + str(quality) + '\n'
 

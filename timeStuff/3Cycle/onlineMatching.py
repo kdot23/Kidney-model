@@ -201,22 +201,34 @@ for fn in args.testFiles:
                 if max_index[1] == 0:
                     count += 1
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],0]) + "\t" \
+<<<<<<< HEAD
                     + "C" + "\t" + str(directed_matches[max_index[0],0]) + "\t" + "C" + "\t" + str(0) + "\t" \
                     + str(demo[max_index[0]][20]) + "\t" + str(t) + "\n"
+=======
+                    + "C" + "\t" + str(directed_matches[max_index[0],0]) + "\t" + "C" + "\t" + str(0) + "\t" + str(demo[max_index[0]-1][20]) + "\t" + str(t) + "\n"
+>>>>>>> 0609774be7767f1e3bcd2fdb49093b0b8696a6f6
                 elif max_index[2] == 0:
                     count += 2
                     available_incompat.remove(max_index[1])
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" \
+<<<<<<< HEAD
                     + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(0) + "\t" \
                     + str(demo[max_index[0]][20]) + "\t" + str(t) +"\n"
                     agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
                     + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[1]]) + "\t" \
                     + str(demo[max_index[1]+C][20]) + "\t" + str(departure_times[max_index[1]-1]) +"\n"
+=======
+                    + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(0) + "\t" + str(demo[max_index[0]-1][20]) + "\t" + str(t) +"\n"
+                    agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
+                    + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[1]]) + "\t" + str(demo[max_index[1]+C-1][20]) + "\t" \
+                    + str(departure_times[max_index[1]-1]) +"\n"
+>>>>>>> 0609774be7767f1e3bcd2fdb49093b0b8696a6f6
                 else:
                     count += 3
                     available_incompat.remove(max_index[1])
                     available_incompat.remove(max_index[2])
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" \
+<<<<<<< HEAD
                     + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(0) +  "\t" \
                     + str(demo[max_index[0]][20]) + "\t" + str(t) +"\n"
                     agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
@@ -225,6 +237,15 @@ for fn in args.testFiles:
                     agentInfo += "I" + str(max_index[2]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" \
                     + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[2]]) + "\t" \
                     + str(demo[max_index[2]+C][20])+ "\t" + str(departure_times[max_index[2]-1]) +"\n"
+=======
+                    + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(0) +  "\t" + str(demo[max_index[0]-1][20]) + "\t" + str(t) +"\n"
+                    agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
+                    + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" + "I" + "\t" + str(beta[max_index[1]]) + "\t" + str(demo[max_index[1]+C-1][20]) \
+                    + "\t" + str(departure_times[max_index[1]-1]) +"\n"
+                    agentInfo += "I" + str(max_index[2]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[2]]) + "\t" + str(demo[max_index[2]+C-1][20]) \
+                    + "\t" + str(departure_times[max_index[2]-1]) +"\n"
+>>>>>>> 0609774be7767f1e3bcd2fdb49093b0b8696a6f6
 
                 if args.lpRepeat:
                     beta = calcBetaLP(C, matches, available_incompat)
@@ -270,13 +291,13 @@ for fn in args.testFiles:
             if args.quality:
                 model += lpSum(x[v]*matches[v] for v in matchVars)
             else:
-                model += lpSum(x[v]*COUNT(V) for v in matchVars)
+                model += lpSum(x[v]*COUNT(v) for v in matchVars)
             for t in available_incompat:
                 model += lpSum(x[t+C,i,j] for i in available_incompat for j in available_incompat if (t+C,i,j) in matchVars) <= 1,\
                         'only match with one '+str(t)
             for i in available_incompat:
-                model += lpSum(x[t+C,i,j] for t in available_incompat for j in available_incompat if (t+C,i,j) in matchVars + \
-                        lpSum(x[t+C,j,i] for t in available_incompat for j in available_incompat if (t+C,j,i) in matchVars + \
+                model += lpSum(x[t+C,i,j] for t in available_incompat for j in available_incompat if (t+C,i,j) in matchVars) + \
+                        lpSum(x[t+C,j,i] for t in available_incompat for j in available_incompat if (t+C,j,i) in matchVars) + \
                         lpSum(x[i+C,j,k] for j in available_incompat for k in available_incompat if (i+C,j,k) in matchVars) <= 1, \
                         'symetry '+str(i)
             model.solve()
@@ -289,6 +310,7 @@ for fn in args.testFiles:
                     available_incompat.remove(v[1])
                     if v[2] == 0:
                         agentInfo += "I" + str(v[0]-C) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" \
+<<<<<<< HEAD
                         + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(beta[v[0]-C]) + "\t" + \
                         str(demo[v[0]+C][20]) + "\t" + str(departure_times[v[0]-1]) +"\n"
                         agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
@@ -305,13 +327,32 @@ for fn in args.testFiles:
                         agentInfo += "I" + str(v[2]) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[2]+C]) + "\t" \
                         + "I" + "\t" + str(directed_matches[v[2]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[2]]) + "\t" \
                         + str(demo[v[2]+C][20]) + "\t" + str(departure_times[v[2]-1]) +"\n"
+=======
+                        + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(beta[v[0]-C]) + "\t" + str(demo[v[0]-1][20]) + "\t" + str(departure_times[v[0]-C-1]) +"\n"
+                        agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
+                        + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\t" + str(demo[v[1]+C-1][20]) + "\t" + str(departure_times[v[1]-1]) +"\n"
+                    else:
+                        available_incompat.remove(v[2])
+                        agentInfo += "I" + str(v[0]-C) + "\t" + str(t) + "\t" + str(directed_matches[v[2]+C,v[0]]) + "\t" \
+                        + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(beta[v[0]-C]) + "\t" + str(demo[v[0]-1][20]) + "\t" + str(departure_times[v[0]-C-1]) + "\n"
+                        agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
+                        + "I" + "\t" + str(directed_matches[v[1]+C,v[2]+C]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\t" \
+                        + str(demo[v[1]+C-1][20]) + "\t" + str(departure_times[v[1]-1]) +"\n"
+                        agentInfo += "I" + str(v[2]) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[2]+C]) + "\t" \
+                                + "I" + "\t" + str(directed_matches[v[2]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[2]]) + "\t" \
+                                + str(demo[v[2]+C-1][20]) + "\t" + str(departure_times[v[2]-1]) +"\n"
+>>>>>>> 0609774be7767f1e3bcd2fdb49093b0b8696a6f6
 
     results += str(count) + '\t' + str(quality) + '\n'
     unmatched_incompat = unmatched_incompat.union(set((i,lastBeta[i]) for i in available_incompat))
     for a in unmatched_incompat:
         i = a[0]
         b = a[1]
+<<<<<<< HEAD
         agentInfo += "I" + str(i) + "\t" + str(T) + "\t" + str(0) + "\t" + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(b) +"\t" + str(demo[i+C][20]) + "\t" + str(T) + "\n"
+=======
+        agentInfo += "I" + str(i) + "\t" + str(T) + "\t" + str(0) + "\t" + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(b) +"\t" + str(demo[i+C-1][20]) + "\t" + str(departure_times[i-1]) + "\n"
+>>>>>>> 0609774be7767f1e3bcd2fdb49093b0b8696a6f6
 
     """
 
@@ -338,8 +379,8 @@ for fn in args.testFiles:
                   for i in beta for j in beta if (t,i,j) in matches}
         max_index = max(values, key=values.get)
         count += COUNT(max_index)
-        quality += matches[max_index]
-        
+        quality += matches[ax_index]
+       
         if max_index[1] == 0:
             agentInfo += "C" + str(t) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],0]) + "\t" \
            + "C" + "\t" + str(directed_matches[max_index[0],0]) + "\t" + "C" + "\t" + str(0) + "\n"
