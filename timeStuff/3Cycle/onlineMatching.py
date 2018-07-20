@@ -281,7 +281,7 @@ for fn in args.testFiles:
                     available_incompat.remove(v[1])
                     if v[2] == 0:
                         agentInfo += "I" + str(v[0]-C) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(beta[v[0]-C]) + "\t" + str(demo[v[0]-1][20]) + "\t" + str(departure_times[v[0]-1]) +"\n"
+                        + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(beta[v[0]-C]) + "\t" + str(demo[v[0]-1][20]) + "\t" + str(departure_times[v[0]-C-1]) +"\n"
                         agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
                         + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\t" + str(demo[v[1]+C-1][20]) + "\t" + str(departure_times[v[1]-1]) +"\n"
                     else:
