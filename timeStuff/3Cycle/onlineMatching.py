@@ -34,7 +34,7 @@ parser.add_argument('-d', '--degree', default=1, type=int, help='type of polynom
 parser.add_argument('--lpEstimator', action='store_true', help='should be present if dual on incompatibles only should be used to \
         estimate betas')
 parser.add_argument('--lpRepeat', action='store_true', help='should be present if lp repeat method is used to estimate betas')
-parser.add_argument('-q', '--cadence', default=1, type=int)
+parser.add_argument('-q', '--cadence', default=1, type=int, help='frequency to clear incompatible pool')
 parser.add_argument('--incompatible_online', type=float, help='threshhold for probability an incompatible stays before it is matched')
 parser.add_argument('--gamma', default=.9, type=float, help='gamma value used for calculating survival')
 parser.add_argument('--graph_state', action='store_true', help='Flag should be present if online LP estimation is included in training data')
