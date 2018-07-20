@@ -70,6 +70,7 @@ for fn in args.inputFiles:
     unmatched_incompat = set()
     arriving_incompat = {}
     arriving_compat = {}
+    num_rounds_present = {}
     
     quality = 0
     count = 0
@@ -89,10 +90,15 @@ for fn in args.inputFiles:
         for i in available_incompat:
             if departure_times[i-1] < t:
                 departing_incompat.add(i)
+                del num_rounds_present[i]
         available_incompat = available_incompat.difference(departing_incompat)
         unmatched_incompat = unmatched_incompat.union(departing_incompat)
+        for i in available_incompat:
+            num_rounds_present[i] += 1
         if t in arriving_incompat:
             available_incompat = available_incompat.union(arriving_incompat[t])
+            for i in arriving_incompat[t]:
+                num_rounds_present[i] = 0
 
 
         if t in arriving_compat:
