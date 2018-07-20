@@ -241,7 +241,7 @@ for fn in args.testFiles:
                         available_incompat.remove(max_index[1])
                         quality += matches[max_index]
                         count += COUNT(max_index)
-                        if v[2] == 0:
+                        if max_index[2] == 0:
                             agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" \
                             + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(beta[max_index[0]-C]) + "\n"
                             agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
