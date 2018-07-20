@@ -34,7 +34,7 @@ parser.add_argument('-d', '--degree', default=1, type=int, help='type of polynom
 parser.add_argument('--lpEstimator', action='store_true', help='should be present if dual on incompatibles only should be used to \
         estimate betas')
 parser.add_argument('--lpRepeat', action='store_true', help='should be present if lp repeat method is used to estimate betas')
-parser.add_argument('-q', '--cadence', default=1, type=int)
+parser.add_argument('-q', '--cadence', default=1, type=int, help='frequency to clear incompatible pool')
 parser.add_argument('--incompatible_online', type=float, help='threshhold for probability an incompatible stays before it is matched')
 parser.add_argument('--gamma', default=.9, type=float, help='gamma value used for calculating survival')
 parser.add_argument('--graph_state', action='store_true', help='Flag should be present if online LP estimation is included in training data')
@@ -210,6 +210,9 @@ for fn in args.testFiles:
                     agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
                     + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "C" + "\t"   + str(demo[max_index[1]+C-1][20]) + "\t" \
                     + str(departure_times[max_index[1]-1])+ "\t" + str(beta[max_index[1]]) + "\n"
+                    agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
+                    + "C" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "C" + "\t" + str(beta[max_index[1]]) + "\t" + str(demo[max_index[1]+C-1][20]) + "\t" \
+                    + str(departure_times[max_index[1]-1]) +"\n"
                 else:
                     count += 3
                     available_incompat.remove(max_index[1])
@@ -297,8 +300,8 @@ for fn in args.testFiles:
                         + "I" + "\t" + str(directed_matches[v[1]+C,v[2]+C]) + "\t" + "I" + "\t"   \
                         + str(demo[v[1]+C-1][20]) + "\t" + str(departure_times[v[1]-1])+ "\t"+ str(beta[v[1]]) +"\n"
                         agentInfo += "I" + str(v[2]) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[2]+C]) + "\t" \
-                                + "I" + "\t" + str(directed_matches[v[2]+C,v[0]]) + "\t" + "I"   + "\t" \
-                                + str(demo[v[2]+C-1][20]) + "\t" + str(departure_times[v[2]-1])+ "\t"+ str(beta[v[2]]) +"\n"
+                                + "I" + "\t" + str(directed_matches[v[2]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[2]]) + "\t" \
+                                + str(demo[v[2]+C-1][20]) + "\t" + str(departure_times[v[2]-1]) +"\n"
 
     results += str(count) + '\t' + str(quality) + '\n'
     unmatched_incompat = unmatched_incompat.union(set((i,lastBeta[i]) for i in available_incompat))

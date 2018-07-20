@@ -200,14 +200,15 @@ for fn in args.testFiles:
                 if max_index == 0:
                     count += 1
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[i,0]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[i,0]) + "\t" + "C" + "\t" + str(0) + "\n"
+                    + "C" + "\t" + str(directed_matches[i,0]) + "\t" + "C" + "\t" + str(demo[i-1][20]) + "\t" + str(t) + "\t" + str(0) + "\n"
                 else:
                     available_incompat.remove(max_index)
                     count += 2
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[i,max_index+C]) + "\t" + "I" + "\t" + str(0) + "\n"
+                    + "I" + "\t" + str(directed_matches[i,max_index+C]) + "\t" + "I" + str(demo[i-1][20]) + "\t" + str(t) + "\t" + str(0) + "\n"
                     agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i,max_index+C]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[max_index+C,i]) + "\t" + "C" + "\t" + str(beta[max_index]) + "\n"
+                    + "C" + "\t" + str(directed_matches[max_index+C,i]) + "\t" + "C" + "\t" + str(demo[max_index+C-1][20]) + "\t" + \
+                    str(departure_times[max_index-1]) + "\t" + str(str(beta[max_index]) + "\n"
                     if args.lpRepeat:
                         beta = calcBetasLP(C, matches, available_incompat)
                         beta[0] = 0
@@ -228,9 +229,11 @@ for fn in args.testFiles:
                         quality += matches[i+C,max_index]
                         count += COUNT((i+C,max_index))
                         agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" + "I" + "\t" + str(beta[i]) + "\n"
+                        + "I" + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" + "I" + "\t" + \
+                        str(demo[i-1][20]) + "\t" + str(departure_times[i-C-1]) + "\t" + str(beta[i]) + "\n"
                         agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" + "I" + "\t" + str(beta[max_index]) + "\n"
+                        + "I" + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" + "I" + "\t" +  \
+                        str(demo[max_index+C-1][20]) + "\t" + str(departure_times[max_index-1]) + "\t" + str(beta[max_index]) + "\n"
         if args.cadence and (t)%args.cadence==0:
             #Do incompatible matching stuff
             model = pulp.LpProblem('incompatible matching', pulp.LpMaximize)
@@ -256,15 +259,18 @@ for fn in args.testFiles:
                     available_incompat.remove(v[1])
                     #Agent Info Stuff
                     agentInfo += "I" + str(v[0]-C) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(beta[v[0]-C]) + "\n"
+                    + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + \
+                    str(demo[v[0]-1][20]) + "\t" + str(departure_times[v[0]-C-1]) + "\t" + str(beta[v[0]-C]) + "\n"
                     agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[1]]) + "\n"
+                    + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\t" \
+                    + str(demo[v[1]+C-1][20]) + "\t" + str(departure_times[v[1]-1]) + "\t" + str(beta[v[1]]) + "\n"
     unmatched_incompat = unmatched_incompat.union(set((i,lastBeta[i]) for i in available_incompat))
     for a in unmatched_incompat:
         i = a[0]
         b = a[1]
         agentInfo += "I" + str(i) + "\t" + str(T) + "\t" + str(0) + "\t" \
-        + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(b) + "\n"
+        + "N" + "\t" + str(0) + "\t" + "N" + "\t" + \
+        + str(demo[i+C-1][20]) + "\t" + str(departure_times[i-1]) + "\t" + str(b) + "\n"
 
     results += str(count) + '\t' + str(quality) + '\n'
 
