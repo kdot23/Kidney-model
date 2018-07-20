@@ -86,7 +86,7 @@ for fn in args.inputFiles:
             arriving_incompat[demo[i][20]] = set()
         arriving_incompat[demo[i][20]].add(i+1-C)
 
-    for t in range(T):
+    for t in range(T+1):
         departing_incompat = set()
         for i in available_incompat:
             if departure_times[i-1] < t:
@@ -141,7 +141,7 @@ for fn in args.inputFiles:
             for i in probs:
                 if i not in available_incompat: continue
                 if probs[i] < args.incompatible_online:
-                    values = {(i+C,j,k):matches[i+C,j, k] for j in available_incompat for k in available_incompat if (i+C,j,k) in matches}
+                    values = {(i+C,j,k):matches[i+C,j, k] for j in available_incompat for k in available_incompat.union(set([0])) if (i+C,j,k) in matches}
                     if len(values) == 0: continue
                     max_index = max(values, key=values.get)
                     if values[max_index] > 0:

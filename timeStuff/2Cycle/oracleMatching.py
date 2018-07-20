@@ -36,8 +36,11 @@ for fn in args.inputFiles:
     num_compat = d[1]
     num_pairs = num_incompat + num_compat
     matches = d[3]
+    demo = d[5]
     directed_matches = d[7]
+    departure_times = d[8]
     T = num_compat
+    C = T
     model = pulp.LpProblem('oracle matching', pulp.LpMaximize)
     if args.incompatibleOnly:
         matchVars = [v for v in matches if v[0] > T]
@@ -68,22 +71,22 @@ for fn in args.inputFiles:
                 #if compatible matched with itself
                 if (v[1] == 0):
                     agentInfo += "C" + str(v[0]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],0]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[v[0],0]) + "\t" + "C" + "\t" + str(demo[v[0]-1) + "\t" + str(0) + "\n"
+                    + "C" + "\t" + str(directed_matches[v[0],0]) + "\t" + "C" + "\t" + str(demo[v[0]-1][20]) + "\t" + str(demo[v[0]-1][20]) + "\n"
                 #compatible and incompatible
                 else:
                     used_incompat.add(v[1])
                     agentInfo += "C" + str(v[0]) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(demo[v[0]-1) + "\t" + str(0) + "\n"
+                    + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(demo[v[0]-1][20]) + "\t" + str(demo[v[0]-1][20]) + "\n"
                     agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "C" + "\t" + str(demo[v[1]+C-1) + "\t" + str(departure_times[v[1]-1]) + "\n"
+                    + "C" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "C" + "\t" + str(demo[v[1]+C-1][20]) + "\t" + str(departure_times[v[1]-1]) + "\n"
             #incompatible and incompatible
             else:
                 used_incompat.add(v[0]-T)
                 used_incompat.add(v[1])
                 agentInfo += "I" + str(v[0]-T) + "\t" + str(0) + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" \
-                + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(demo[v[0]-1) + "\t" + str(departure_times[v[0]-1])) + "\n"
+                + "I" + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" + "I" + "\t" + str(demo[v[0]-1][20]) + "\t" + str(departure_times[v[0]-T-1]) + "\n"
                 agentInfo += "I" + str(v[1]) + "\t" + str(0) + "\t" + str(directed_matches[v[0],v[1]+T]) + "\t" \
-                + "I" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\t" + str(demo[v[1]+C-1) + "\t" + str(departure_times[v[1]-1]) + "\n"                
+                + "I" + "\t" + str(directed_matches[v[1]+T,v[0]]) + "\t" + "I" + "\t" + str(demo[v[1]+C-1][20]) + "\t" + str(departure_times[v[1]-1]) + "\n"                
                 
                 
     if args.incompatibleOnly:
@@ -96,7 +99,7 @@ for fn in args.inputFiles:
     for i in range(1,num_incompat+1):
         if i not in used_incompat:
             agentInfo += "I" + str(i) + "\t" + str(52) + "\t" + str(0) + "\t" \
-                + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(demo[i+C-1) + "\t" + str(departure_times[i+C-1]) + "\n"
+                + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(demo[i+C-1][20]) + "\t" + str(departure_times[i-1]) + "\n"
     
     results += str(count) + "\t" + str(quality) + "\n"
 
