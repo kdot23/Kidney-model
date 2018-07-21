@@ -198,6 +198,7 @@ for fn in args.testFiles:
                     values = {(i,j,k):COUNT((i,j,k)) - beta[j] - beta[k] for j in available_incompat.union(set([0]))
                             for k in available_incompat.union(set([0])) if (i,j,k) in matches}
                 max_index = max(values,key=values.get)
+                quality += matches[max_index]
                 if max_index[1] == 0:
                     count += 1
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],0]) + "\t" \
