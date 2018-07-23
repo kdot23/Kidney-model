@@ -23,7 +23,8 @@ parser.add_argument('-T', '--time', default=100, dest='T', type = int)
 parser.add_argument('-o', '--output', default='data.dat')
 parser.add_argument('--l1', default=1., type=float, help = "Incompatible arrival rate")
 parser.add_argument('--l2', default=1., type=float, help = "Compatible arrival rate")
-parser.add_argument('--gamma', default=.9,type=float, help = "Deterioration rate")
+parser.add_argument('-L', '--mean_life', type=int, default=75, help='Mean lifespan of an incompatible pair')
+parser.add_argument('-S', '--stdev_life', type=int, default=5, help='Stdev of lifespans of incompatible pairs')
 
 args = parser.parse_args()
 
@@ -52,9 +53,8 @@ for t in range(1,T+1):
         compatibles.append(pair)
 
 for i in range(len(incompatibles)):
-    time = 0
-    while random.random() < (args.gamma**time)*incompatibles[i].patient_health:
-        time += 1
+    time = round(max(0,np.random.normal(loc=args.mean_life, scale=args.stdev_life)))
+    incompatibles[i].life_span = time
     departureTimesIncompat.append(incompatibles[i].arrival_time+time)
 
 
@@ -89,7 +89,7 @@ def generateDemo(pair):
          int(pair.bloodTypePatient == 3 ), int(pair.bloodTypeDonor == 0 ), int(pair.bloodTypeDonor == 1 ), \
          int(pair.bloodTypeDonor == 2 ), int(pair.bloodTypeDonor == 3 ), pair.donor_afam, pair.donor_age, \
          pair.donor_sex[0], pair.donor_cig_use[0], pair.rec_sex[0], pair.donor_weight, pair.rec_weight, \
-         pair.donor_bmi, pair.donor_egfr, pair.donor_sbp, pair.pr_PraIncompatiblity, pair.patient_health, pair.arrival_time)
+         pair.donor_bmi, pair.donor_egfr, pair.donor_sbp, pair.pr_PraIncompatiblity, pair.life_span, pair.arrival_time)
 
 def compatible(donor, recipient):
     return functions.are_blood_compatible(donor.bloodTypeDonor, recipient.bloodTypePatient) \

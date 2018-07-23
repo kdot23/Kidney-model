@@ -35,7 +35,7 @@ parser.add_argument('--lpEstimator', action='store_true', help='should be presen
         estimate betas')
 parser.add_argument('--lpRepeat', action='store_true', help='should be present if lp repeat method is used to estimate betas')
 parser.add_argument('-q', '--cadence', default=1, type=int, help='frequency to clear incompatible pool')
-parser.add_argument('--incompatible_online', type=float, help='threshhold for probability an incompatible stays before it is matched')
+parser.add_argument('--incompatible_online', action='store_true', help='threshhold for probability an incompatible stays before it is matched')
 parser.add_argument('--gamma', default=.9, type=float, help='gamma value used for calculating survival')
 parser.add_argument('--graph_state', action='store_true', help='Flag should be present if online LP estimation is included in training data')
 args = parser.parse_args()
@@ -230,36 +230,34 @@ for fn in args.testFiles:
 
 
         if args.incompatible_online:
-            probs = {i:demo[i+C-1][19]*args.gamma**num_rounds_present[i] for i in available_incompat}
-            for i in probs:
+            matching_incompat = set(i for i in available_incompat if departure_times[i-1] <= t)
+            for i in matching_incompat:
                 if i not in available_incompat: continue
-                if probs[i] < args.incompatible_online:
-                    values = {(i+C,j,k):matches[i+C,j, k] - beta[j] - beta[k] for j in available_incompat for k in available_incompat.union(set([0])) if (i+C,j,k) in matches}
-                    if len(values) == 0: continue
-                    max_index = max(values, key=values.get)
-                    if values[max_index] > 0:
-                        available_incompat.remove(i)
-                        available_incompat.remove(max_index[1])
-                        quality += matches[max_index]
-                        count += COUNT(max_index)
-                        if max_index[2] == 0:
-                            agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" \
-                            + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(demo[i+C-1][20]) +\
-                            '\t' + str(departure_times[i-1]) + '\t' +  str(beta[max_index[0]-C]) + "\n"
-                            agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
-                            + "I" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "I" + "\t" + str(demo[max_index[1]+C-1][20]) \
-                            + '\t' + str(departure_times[max_index[1]-1]) + '\t' + str(beta[max_index[1]]) + "\n"
-                        else:
-                            available_incompat.remove(max_index[2])
-                            agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" \
-                            + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" +\
-                            str(demo[i+C-1][20]) + '\t' + str(departure_times[i-1]) +'\t' + str(beta[max_index[0]-C]) + "\n"
-                            agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
-                            + "I" + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" + "I" + "\t" +\
-                            str(demo[max_index[1]+C-1][20]) + '\t' + str(departure_times[max_index[1]-1]) + '\t' +  str(beta[max_index[1]]) + "\n"
-                            agentInfo += "I" + str(max_index[2]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" \
-                            + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "I" + "\t" + \
-                            str(demo[max_index[2]+C-1][20]) + '\t' + str(departure_times[max_index[2]-1]) + '\t' + str(beta[max_index[2]]) + "\n"
+                values = {(i+C,j,k):matches[i+C,j, k] - beta[j] - beta[k] for j in available_incompat for k in available_incompat.union(set([0])) if (i+C,j,k) in matches}
+                if len(values) == 0: continue
+                max_index = max(values, key=values.get)
+                available_incompat.remove(i)
+                available_incompat.remove(max_index[1])
+                quality += matches[max_index]
+                count += COUNT(max_index)
+                if max_index[2] == 0:
+                    agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" + str(demo[i+C-1][20]) +\
+                    '\t' + str(departure_times[i-1]) + '\t' +  str(beta[max_index[0]-C]) + "\n"
+                    agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[max_index[1]+C,max_index[0]]) + "\t" + "I" + "\t" + str(demo[max_index[1]+C-1][20]) \
+                    + '\t' + str(departure_times[max_index[1]-1]) + '\t' + str(beta[max_index[1]]) + "\n"
+                else:
+                    available_incompat.remove(max_index[2])
+                    agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" + "I" + "\t" +\
+                    str(demo[i+C-1][20]) + '\t' + str(departure_times[i-1]) +'\t' + str(beta[max_index[0]-C]) + "\n"
+                    agentInfo += "I" + str(max_index[1]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],max_index[1]+C]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" + "I" + "\t" +\
+                    str(demo[max_index[1]+C-1][20]) + '\t' + str(departure_times[max_index[1]-1]) + '\t' +  str(beta[max_index[1]]) + "\n"
+                    agentInfo += "I" + str(max_index[2]) + "\t" + str(t) + "\t" + str(directed_matches[max_index[1]+C,max_index[2]+C]) + "\t" \
+                    + "I" + "\t" + str(directed_matches[max_index[2]+C,max_index[0]]) + "\t" + "I" + "\t" + \
+                    str(demo[max_index[2]+C-1][20]) + '\t' + str(departure_times[max_index[2]-1]) + '\t' + str(beta[max_index[2]]) + "\n"
         if args.cadence and t%args.cadence == 0:
             model = pulp.LpProblem('match incompatibles', pulp.LpMaximize)
             matchVars = [(i+C,j,k) for i in available_incompat for j in available_incompat for k in available_incompat if (i+C,j,k) in matches]
