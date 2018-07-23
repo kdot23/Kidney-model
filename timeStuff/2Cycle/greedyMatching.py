@@ -18,7 +18,7 @@ parser.add_argument('--agents', help='output the quality of each agent to this f
 parser.add_argument("-n", type = int, default = 2, help = "max number of connections incompatibles can be matched to and still removed from pool")
 parser.add_argument("--graph", help = "output a graphviz representation")
 parser.add_argument('-q', '--cadence', type=int)
-parser.add_argument('--incompatible_online', type=float, help='threshhold for probability an incompatible stays before it is matched')
+parser.add_argument('--incompatible_online', action='store_true', help='threshhold for probability an incompatible stays before it is matched')
 parser.add_argument('--gamma', default=.9, type=float, help='gamma value used for calculating survival')
 args=parser.parse_args()
 
@@ -122,22 +122,20 @@ for fn in args.inputFiles:
 
 
         if args.incompatible_online:
-            probs = {i:demo[i+C-1][19]*args.gamma**num_rounds_present[i] for i in available_incompat}
-            for i in probs:
+            matching_incompat = set(i for i in available_incompat if departure_times[i-1] <= t)
+            for i in matching_incompat:
                 if i not in available_incompat: continue
-                if probs[i] < args.incompatible_online:
-                    values = {j:matches[i+C,j]  for j in available_incompat if (i+C,j) in matches}
-                    if len(values) == 0: continue
-                    max_index = max(values, key=values.get)
-                    if values[max_index] > 0:
-                        available_incompat.remove(i)
-                        available_incompat.remove(max_index)
-                        quality += matches[i+C,max_index]
-                        count += COUNT((i+C,max_index))
-                        agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" \
-                                + "I" + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" + "I" + "\t" + str(demo[i+C-1][20]) + "\t" + str(departure_times[i-1]) + "\n"
-                        agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" + "I" +   "\t" + str(demo[max_index+C-1][20]) + "\t" + str(departure_times[max_index-1]) + "\n"
+                values = {j:matches[i+C,j]  for j in available_incompat if (i+C,j) in matches}
+                if len(values) == 0: continue
+                max_index = max(values, key=values.get)
+                available_incompat.remove(i)
+                available_incompat.remove(max_index)
+                quality += matches[i+C,max_index]
+                count += COUNT((i+C,max_index))
+                agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" \
+                        + "I" + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" + "I" + "\t" + str(demo[i+C-1][20]) + "\t" + str(departure_times[i-1]) + "\n"
+                agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" \
+                + "I" + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" + "I" +   "\t" + str(demo[max_index+C-1][20]) + "\t" + str(departure_times[max_index-1]) + "\n"
         if args.cadence and  t%args.cadence==0:
             #do incompatible matching stuff
             matchVars = [(i+C,j) for i in available_incompat for j in available_incompat if (i+C, j) in matches]

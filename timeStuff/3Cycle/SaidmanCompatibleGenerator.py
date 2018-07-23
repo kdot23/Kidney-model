@@ -63,8 +63,6 @@ class SaidmanCompatibleGenerator:
         self.AA_given_type_AB = self.type_AB_given_AA * self.donorAA / self.Pr_DONOR_TYPE_AB
 
 
-        self.HEALTH_MEAN = .75
-        self.HEALTH_STDEV = .1
 
     def drawPatientBloodType(self):
 
@@ -99,8 +97,6 @@ class SaidmanCompatibleGenerator:
         return x.astype(int)
 
 
-    def drawPatientHealth(self):
-        return min(np.random.normal(self.HEALTH_MEAN,self.HEALTH_STDEV), 1.0)
 
     def isPatientFemale(self):
         return random.random() <= self.Pr_FEMALE
@@ -275,7 +271,6 @@ class BJCPair():
 
         self.donor_rec_weight_ratio = util.calculate_weight_ratio(self.donor_weight, self.rec_weight)
 
-        self.patient_health = self.saidman.drawPatientHealth()
 
 
     def get_lkdpi(self):
