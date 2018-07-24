@@ -9,10 +9,12 @@ import argparse
 import numpy as np
 import pulp
 from pulp import lpSum
+from zipfile import ZipFile
 
 parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file")
 parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="list of .dat files to be used as input. List of number of \
                     incompatible pairs, number of compatible pairs, and list of all possible pairs with donor, recipient, egs")
+parser.add_argument('--inputZipFile', help='filename of zip file to look for inputFiles in, if not given data is assumed to be uncompressed')
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
 parser.add_argument('-o', '--output')
 parser.add_argument('--incompatibleOnly', action = 'store_true', help = "Run the oracle on only the incompatible pairs")
@@ -29,9 +31,14 @@ def COUNT(v):
 pastData = []
 results = ''
 agentInfo = ''
+if args.inputZipFile:
+    inputZipFile = ZipFile(args.inputZipFile)
 for fn in args.inputFiles:    
-    with open(fn, 'rb') as f:
-        d = pickle.load(f)
+    if args.inputZipFile:
+        d = pickle.loads(inputZipFile.read(fn))
+    else:
+        with open(fn, 'rb') as f:
+            d = pickle.load(f)
     num_incompat = d[0]
     num_compat = d[1]
     num_pairs = num_incompat + num_compat
@@ -102,6 +109,9 @@ for fn in args.inputFiles:
                 + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(demo[i+C-1][20]) + "\t" + str(departure_times[i-1]) + "\n"
     
     results += str(count) + "\t" + str(quality) + "\n"
+
+if args.inputZipFile:
+    inputZipFile.close()
 
 if args.output:
     with open(args.output, 'w') as f:

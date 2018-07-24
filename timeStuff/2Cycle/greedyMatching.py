@@ -7,11 +7,13 @@ from sets import Set
 import os
 import pulp
 from pulp import lpSum
+from zipfile import ZipFile
 
 parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file using a simple greedy algorithm")
 parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="List of .dat files to be used as input. List of number of \
                     incompatible pairs, number of compatible pairs, list of quality(egs) of all possible pairs \
                     and demographic information. File created in KidneyDataGen")
+parser.add_argument('--inputZipFile', help='filename of zip file to look for inputFiles in, if not given data is assumed to be uncompressed')
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
 parser.add_argument('-o', '--output', help='write results to this file (.csv)')
 parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
@@ -54,9 +56,15 @@ results = ''
 agentInfo = ''
 dataIndex = 0
 
+if args.inputZipFile:
+    inputZipFile = ZipFile(args.inputZipFile)
+
 for fn in args.inputFiles:    
-    with open(fn, 'rb') as f:
-        d = pickle.load(f)
+    if args.inputZipFile:
+        d = pickle.loads(inputZipFile.read(fn))
+    else:
+        with open(fn, 'rb') as f:
+            d = pickle.load(f)
     I = d[0]
     C = d[1]
     num_pairs = I+C
@@ -171,6 +179,8 @@ for fn in args.inputFiles:
         + "N" + "\t" + str(0) + "\t" + "N" +  "\t" + str(demo[i+C-1][20]) + "\t" + str(departure_times[i-1]) + "\n"
 
     results += str(count) + '\t' + str(quality) + '\n'
+if args.inputZipFile: 
+    inputZipFile.close()
 
 
 """
