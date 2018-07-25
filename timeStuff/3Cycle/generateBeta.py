@@ -1,5 +1,4 @@
 import json
-import pickle
 import argparse
 import os
 import pulp
@@ -14,6 +13,9 @@ parser.add_argument('--quality', action = "store_true", help="Optimize for quali
 parser.add_argument('--graph_state', action='store_true', help='Flag should be present if online LP estimation is included in training data')
 
 args = parser.parse_args()
+
+def convertStringToTuple(s):
+    return tuple(int(i) for i in s.split(','))
 
 def COUNT(v):
     if v[2] != 0:
@@ -55,16 +57,17 @@ if args.inputZipFile:
     inputZipFile = ZipFile(args.inputZipFile)
 for fn in args.inputFiles:
     if args.inputZipFile:
-        d = pickle.loads(inputZipFile.read(fn))
+        d = json.loads(inputZipFile.read(fn))
     else: 
         with open(fn, 'rb') as f:
-            d = pickle.load(f)
+            d = json.load(f)
     #T is number of compatible pairs
     C = d[1]
     #K is number of incompatible pairs
     K = d[0]
     T = d[2]
     matches = d[4]
+    matches = {convertStringToTuple(i):matches[i] for i in matches}
     demo = d[5]
     departure_times = d[8]
     
@@ -127,7 +130,8 @@ for fn in args.inputFiles:
     else:
         for i in range(1,K+1):
             results.append((demo[i+C-1], (beta[i].value() if i in beta else 0)))
-inputZipFile.close()
+if args.inputZipFile:
+    inputZipFile.close()
 
 if args.output:
     with open(args.output, 'w') as f:

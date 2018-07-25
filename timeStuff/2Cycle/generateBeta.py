@@ -1,5 +1,4 @@
 import json
-import pickle
 import argparse
 import os
 import pulp
@@ -16,6 +15,9 @@ parser.add_argument('--graph_state', action='store_true', help='Flag should be p
 args = parser.parse_args()
 
 results = []
+
+def convertStringToTuple(s):
+    return tuple(int(i) for i in s.split(','))
 
 def COUNT(v):
     if v[1] == 0:
@@ -49,10 +51,10 @@ if args.inputZipFile:
     inputZipFile = ZipFile(args.inputZipFile)
 for fn in args.inputFiles:
     if args.inputZipFile:
-        d = pickle.loads(inputZipFile.read(fn))
+        d = json.loads(inputZipFile.read(fn))
     else:
         with open(fn, 'rb') as f:
-            d = pickle.load(f)
+            d = json.load(f)
     #T is number of compatible pairs
     C = d[1]
     #K is number of incompatible pairs
@@ -60,6 +62,7 @@ for fn in args.inputFiles:
     I = K
     T = d[2]
     matches = d[3]
+    matches = {convertStringToTuple(i):matches[i] for i in matches}
     demo = d[5]
     departure_times = d[8]
     

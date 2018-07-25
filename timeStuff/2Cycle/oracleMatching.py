@@ -4,7 +4,6 @@
 Takes a directory (default) or a single file of data and optimizes the model for count or quality.
 """
 import json
-import pickle
 import argparse
 import numpy as np
 import pulp
@@ -23,6 +22,9 @@ args=parser.parse_args()
 
 data = []
         
+def convertStringToTuple(s):
+    return tuple(int(i) for i in s.split(','))
+
 def COUNT(v):
     if v[1] == 0:
         return 1
@@ -35,16 +37,18 @@ if args.inputZipFile:
     inputZipFile = ZipFile(args.inputZipFile)
 for fn in args.inputFiles:    
     if args.inputZipFile:
-        d = pickle.loads(inputZipFile.read(fn))
+        d = json.loads(inputZipFile.read(fn))
     else:
         with open(fn, 'rb') as f:
-            d = pickle.load(f)
+            d = json.load(f)
     num_incompat = d[0]
     num_compat = d[1]
     num_pairs = num_incompat + num_compat
     matches = d[3]
+    matches = {convertStringToTuple(i):matches[i] for i in matches}
     demo = d[5]
     directed_matches = d[7]
+    directed_matches = {convertStringToTuple(i):directed_matches[i] for i in directed_matches}
     departure_times = d[8]
     T = num_compat
     C = T

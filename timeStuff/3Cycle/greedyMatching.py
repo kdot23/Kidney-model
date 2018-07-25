@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 import json
-import pickle
 import argparse
 import numpy as np
 from sets import Set
@@ -26,6 +25,10 @@ parser.add_argument('--gamma', default=.9, type=float, help='gamma value used fo
 args=parser.parse_args()
 
 graph_colors = ["red", "blue", "green", "black"]
+
+
+def convertStringToTuple(s):
+    return tuple(int(i) for i in s.split(','))
 
 def COUNT(v):
     if v[2] != 0:
@@ -63,15 +66,17 @@ if args.inputZipFile:
     inputZipFile = ZipFile(args.inputZipFile)
 for fn in args.inputFiles:
     if args.inputZipFile:
-        d = pickle.loads(inputZipFile.read(fn))
+        d = json.loads(inputZipFile.read(fn))
     else: 
         with open(fn, 'rb') as f:
-            d = pickle.load(f)
+            d = json.load(f)
     I = d[0]
     C = d[1]
     num_pairs = I + C
     matches = d[4]
+    matches = {convertStringToTuple(i):matches[i] for i in matches}
     directed_matches = d[7]
+    directed_matches = {convertStringToTuple(i):directed_matches[i] for i in directed_matches}
     T = d[2]
     demo = d[5]
     departure_times = d[8]

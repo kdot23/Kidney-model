@@ -8,7 +8,6 @@ Output is csv format of optimal count and quality for the population.
 """
 import argparse
 import json
-import pickle
 import random
 from sklearn import linear_model
 from sklearn import ensemble
@@ -45,6 +44,10 @@ args = parser.parse_args()
 
 
 graph_colors = ["red", "blue", "green", "black"]
+
+def convertStringToTuple(s):
+    return tuple(int(i) for i in s.split(','))
+
 
 def COUNT(v):
     if v[1] == 0:
@@ -138,17 +141,19 @@ if args.testZipFile:
     testZipFile = ZipFile(args.testZipFile)
 for fn in args.testFiles:
     if args.testZipFile:
-        data = pickle.loads(testZipFile.read(fn))
+        data = json.loads(testZipFile.read(fn))
     else:
         with open(fn, 'r') as f:
-            data = pickle.load(f)
+            data = json.load(f)
 
     I = data[0]
     C = data[1]
     T = data[2]
     matches = data[3]
+    matches = {convertStringToTuple(i):matches[i] for i in matches}
     demo = data[5]
     directed_matches = data[7]
+    directed_matches = {convertStringToTuple(i):directed_matches[i] for i in directed_matches}
     departure_times = data[8]
     available_incompat = set()
     unmatched_incompat = set()
