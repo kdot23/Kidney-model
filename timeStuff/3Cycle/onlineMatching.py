@@ -8,7 +8,6 @@ Output is csv format of optimal count and quality for the population.
 """
 import argparse
 import json
-import pickle
 import random
 from sklearn import linear_model
 from sklearn import ensemble
@@ -16,12 +15,15 @@ from sklearn.preprocessing import PolynomialFeatures
 import os
 import pulp
 from pulp import lpSum
+from zipfile import ZipFile
 
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--trainFiles', nargs = "+", help = "List of files to train on")
+parser.add_argument('--trainZipFile', help='filename of zip file to look for trainFiles in, if not given data is assumed to be uncompressed')
 parser.add_argument('--testFiles', nargs = "+", help = "List of files to test")
+parser.add_argument('--testZipFile', help='filename of zip file to look for testFiles in, if not given data is assumed to be uncompressed')
 parser.add_argument('-o', '--output', help = 'csv file to output count and quality to')
 parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
 parser.add_argument("-v", "--useVars", nargs = "+", type = int, default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], \
@@ -42,6 +44,10 @@ args = parser.parse_args()
 
 
 graph_colors = ["red", "blue", "green", "black"]
+
+
+def convertStringToTuple(s):
+    return tuple(int(i) for i in s.split(','))
 
 def getBloodTypes(demo):
     bd,br=0,0
@@ -100,9 +106,16 @@ graph = "digraph G {\n"
 varsUsed = args.useVars
 data = []
 if args.trainFiles:
+    if args.trainZipFile:
+        trainZipFile = ZipFile(args.trainZipFile)
     for fn in args.trainFiles:
-        with open(fn, 'r') as f:
-            data += json.load(f)
+        if args.trainZipFile:
+            data += json.loads(trainZipFile.read(fn))
+        else:
+            with open(fn, 'r') as f:
+                data += json.load(f)
+    if args.trainZipFile:
+        trainZipFile.close()
     random.shuffle(data)
     
     values = []
@@ -125,16 +138,23 @@ if args.trainFiles:
     LR.fit(X, labels)
     
 dataIndex = 0
+if args.testZipFile:
+    testZipFile = ZipFile(args.testZipFile)
 for fn in args.testFiles:
-    with open(fn, 'r') as f:
-        data = pickle.load(f)
+    if args.testZipFile:
+        data = json.loads(testZipFile.read(fn))
+    else:
+        with open(fn, 'r') as f:
+            data = json.load(f)
 
     I = data[0]
     C = data[1]
     T = data[2]
     matches = data[4]
+    matches = {convertStringToTuple(i):matches[i] for i in matches}
     demo = data[5]
     directed_matches = data[7]
+    directed_matches = {convertStringToTuple(i):directed_matches[i] for i in directed_matches}
     departure_times = data[8]
     used_incompat = set()
 
@@ -306,6 +326,8 @@ for fn in args.testFiles:
         b = a[1]
         agentInfo += "I" + str(i) + "\t" + str(T) + "\t" + str(0) + "\t" + "N" + "\t" + str(0) + "\t" + "N"  +"\t" + str(demo[i+C-1][20]) + "\t" + str(departure_times[i-1])+ "\t" + str(b) + "\n"
 
+if args.testZipFile:
+    testZipFile.close()
     """
 
 

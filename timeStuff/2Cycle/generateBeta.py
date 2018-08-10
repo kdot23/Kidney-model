@@ -1,12 +1,13 @@
 import json
-import pickle
 import argparse
 import os
 import pulp
 from pulp import lpSum
+from zipfile import ZipFile
 
 parser = argparse.ArgumentParser(description="Computes the dual of our problem")
 parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help='input file to use')
+parser.add_argument('--inputZipFile', help='filename of zip file to look for inputFiles in, if not given data is assumed to be uncompressed')
 parser.add_argument('-o', '--output', help='output file (json) to use. Includes demographic information and beta values')
 parser.add_argument('--quality', action = "store_true", help="Optimize for quality")
 parser.add_argument('--graph_state', action='store_true', help='Flag should be present if online LP estimation is included in training data')
@@ -14,6 +15,9 @@ parser.add_argument('--graph_state', action='store_true', help='Flag should be p
 args = parser.parse_args()
 
 results = []
+
+def convertStringToTuple(s):
+    return tuple(int(i) for i in s.split(','))
 
 def COUNT(v):
     if v[1] == 0:
@@ -43,9 +47,14 @@ def calcBetasLP(C, matches, available_incompat):
             newBeta[i] = 0
     return newBeta
 
+if args.inputZipFile:
+    inputZipFile = ZipFile(args.inputZipFile)
 for fn in args.inputFiles:
-    with open(fn, 'rb') as f:
-        d = pickle.load(f)
+    if args.inputZipFile:
+        d = json.loads(inputZipFile.read(fn))
+    else:
+        with open(fn, 'rb') as f:
+            d = json.load(f)
     #T is number of compatible pairs
     C = d[1]
     #K is number of incompatible pairs
@@ -53,6 +62,7 @@ for fn in args.inputFiles:
     I = K
     T = d[2]
     matches = d[3]
+    matches = {convertStringToTuple(i):matches[i] for i in matches}
     demo = d[5]
     departure_times = d[8]
     
@@ -75,6 +85,7 @@ for fn in args.inputFiles:
     else:
         for t in range(1,C+K+1):
             for i in beta:
+                if (t,i) not in matches: continue
                 model += COUNT((t,i)) - (alpha[t] if t in alpha else 0) - beta[i] - (beta[t-C] if t-C in beta else 0) <= 0, 'alpha_beta '+str((t,i))
 
     
@@ -107,6 +118,8 @@ for fn in args.inputFiles:
     else:
         for i in range(1,K+1):
             results.append((demo[i+C-1], (beta[i].value() if i in beta else 0)))
+if args.inputZipFile:
+    inputZipFile.close()
 
 if args.output:
     with open(args.output, 'w') as f:

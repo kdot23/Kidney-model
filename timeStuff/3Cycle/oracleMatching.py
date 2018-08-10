@@ -12,15 +12,17 @@ Created on Wed Jun 27 09:07:27 2018
 Takes a list of .dat files from KidneyDataGen and optimizes the model for count or quality.
 Returns count and quality for each population allowing cycles of up to three pairs.
 """
-import pickle
+import json
 import argparse
 import numpy as np
 import pulp
 from pulp import lpSum
+from zipfile import ZipFile
 
 parser = argparse.ArgumentParser(description="Optimizes Kidney Exchange given by input file")
 parser.add_argument('--inputFiles', nargs='+', default = ["data.dat"], help="list of .dat files to be used as input. List of number of \
                     incompatible pairs, number of compatible pairs, and list of all possible pairs with donor, recipient, egs")
+parser.add_argument('--inputZipFile', help='filename of zip file to look for inputFiles in, if not given data is assumed to be uncompressed')
 parser.add_argument('--quality', action='store_true', help="Optimize for quality")
 parser.add_argument('-o', '--output')
 parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
@@ -28,6 +30,9 @@ parser.add_argument('--incompatibleOnly', action = 'store_true', help = "Run the
 args=parser.parse_args()
 
 data = []
+
+def convertStringToTuple(s):
+    return tuple(int(i) for i in s.split(','))
 
 def COUNT(v):
     if v[1] == 0:
@@ -38,14 +43,21 @@ def COUNT(v):
 
 results = ''
 agentInfo = ''
+if args.inputZipFile:
+    inputZipFile = ZipFile(args.inputZipFile)
 for fn in args.inputFiles:
-    with open(fn, 'rb') as f:
-        d = pickle.load(f)
+    if args.inputZipFile:
+        d = json.loads(inputZipFile.read(fn))
+    else: 
+        with open(fn, 'rb') as f:
+            d = json.load(f)
     num_incompat = d[0]
     num_compat = d[1]
     num_pairs = num_incompat + num_compat
     matches = d[4]
+    matches = {convertStringToTuple(i):matches[i] for i in matches}
     directed_matches = d[7]
+    directed_matches = {convertStringToTuple(i):directed_matches[i] for i in directed_matches}
     demo = d[5]
     departure_times = d[8]
     T = num_compat
@@ -150,6 +162,9 @@ for fn in args.inputFiles:
         if i not in used_incompat:
              agentInfo += "I" + str(i) + "\t" + str(d[2]+2) + "\t" + str(0) + "\t" \
         + "N" + "\t" + str(0) + "\t" + "N" + '\t' + str(demo[i+C-1][20]) + '\t' + str(departure_times[i-1]) + "\n"
+
+if args.inputZipFile:
+    inputZipFile.close()
 
 if args.output:
     with open(args.output, 'w') as f:

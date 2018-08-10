@@ -8,7 +8,6 @@ Output is csv format of optimal count and quality for the population.
 """
 import argparse
 import json
-import pickle
 import random
 from sklearn import linear_model
 from sklearn import ensemble
@@ -16,12 +15,15 @@ from sklearn.preprocessing import PolynomialFeatures
 import os
 import pulp
 from pulp import lpSum
+from zipfile import ZipFile
 
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--trainFiles', nargs = "+", help = "List of files to train on")
+parser.add_argument('--trainZipFile', help='filename of zip file to look for trainFiles in, if not given data is assumed to be uncompressed')
 parser.add_argument('--testFiles', nargs = "+", help = "List of files to test")
+parser.add_argument('--testZipFile', help='filename of zip file to look for testFiles in, if not given data is assumed to be uncompressed')
 parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
 parser.add_argument('-d', '--degree', default=1, type=int, help='type of polynomial to use while training')
 parser.add_argument('-o', '--output', help = 'csv file to output count and quality to')
@@ -42,6 +44,10 @@ args = parser.parse_args()
 
 
 graph_colors = ["red", "blue", "green", "black"]
+
+def convertStringToTuple(s):
+    return tuple(int(i) for i in s.split(','))
+
 
 def COUNT(v):
     if v[1] == 0:
@@ -98,10 +104,17 @@ graph = "digraph G {\n"
 varsUsed = args.useVars
 data = []
 if not (args.lpEstimator or args.lpRepeat):
+    if args.trainZipFile:
+        trainZipFile = ZipFile(args.trainZipFile)
     for fn in args.trainFiles:
-        with open(fn, 'r') as f:
-            data += json.load(f)
+        if args.trainZipFile:
+            data += json.loads(trainZipFile.read(fn))
+        else:
+            with open(fn, 'r') as f:
+                data += json.load(f)
     random.shuffle(data)
+    if args.trainZipFile:
+        trainZipFile.close()
 
     values = []
     labels = []
@@ -124,17 +137,23 @@ if not (args.lpEstimator or args.lpRepeat):
 
 dataIndex = 0
 agentInfo = ''
+if args.testZipFile:
+    testZipFile = ZipFile(args.testZipFile)
 for fn in args.testFiles:
-    
-    with open(fn, 'r') as f:
-        data = pickle.load(f)
+    if args.testZipFile:
+        data = json.loads(testZipFile.read(fn))
+    else:
+        with open(fn, 'r') as f:
+            data = json.load(f)
 
     I = data[0]
     C = data[1]
     T = data[2]
     matches = data[3]
+    matches = {convertStringToTuple(i):matches[i] for i in matches}
     demo = data[5]
     directed_matches = data[7]
+    directed_matches = {convertStringToTuple(i):directed_matches[i] for i in directed_matches}
     departure_times = data[8]
     available_incompat = set()
     unmatched_incompat = set()
@@ -271,6 +290,8 @@ for fn in args.testFiles:
         str(demo[i+C-1][20]) + "\t" + str(departure_times[i-1]) + "\t" + str(b) + "\n"
 
     results += str(count) + '\t' + str(quality) + '\n'
+if args.testZipFile:
+    testZipFile.close()
 
 
 
