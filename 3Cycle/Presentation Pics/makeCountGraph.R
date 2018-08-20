@@ -1,0 +1,13 @@
+greedy = read.csv('greedy.csv', header=FALSE, sep='\t')
+odasse = read.csv('onlineLinearGraphState.csv', header=FALSE, sep='\t')
+oracle = read.csv('oracle.csv', header=FALSE, sep='\t')
+oracleCount = read.csv('oracleCount.csv', header=FALSE, sep='\t')
+greedy$Cat = c(rep('greedy', nrow(greedy)))
+odasse$Cat = c(rep('odasse', nrow(odasse)))
+oracle$Cat = c(rep('oracle', nrow(oracle)))
+oracleCount$Cat = c(rep('oracle count', nrow(oracleCount)))
+
+total = rbind(greedy, odasse, oracle, oracleCount)
+total$Cat = factor(total$Cat, c('greedy', 'odasse', 'oracle count', 'oracle'))
+par(cex.main=1.5, cex.lab=1.5, cex.axis=1.5)
+boxplot(V1~Cat, total, col='powderblue', names=c('Greedy', 'ODASSE', 'Oracle Count', 'Oracle'), main='Number of Matches by Algorithm', ylab='Number of Matches', boxlwd=2)
