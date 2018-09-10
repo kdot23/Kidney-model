@@ -140,7 +140,7 @@ for fn in args.inputFiles:
         for i in range(1, num_compat+1):
             agentInfo += "C" + str(i) + "\t" + str(0) + "\t" + str(directed_matches[i,0]) + "\t" \
             + "C" + "\t" + str(directed_matches[i,0]) + "\t" + "C" + "\n"
-
+#changed
 if args.output:
     with open(args.output, 'w') as f:
         f.write(results)
