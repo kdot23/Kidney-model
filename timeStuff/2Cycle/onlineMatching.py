@@ -8,19 +8,22 @@ Output is csv format of optimal count and quality for the population.
 """
 import argparse
 import json
-import pickle
-from gurobipy import *
 import random
 from sklearn import linear_model
 from sklearn import ensemble
 from sklearn.preprocessing import PolynomialFeatures
 import os
+import pulp
+from pulp import lpSum
+from zipfile import ZipFile
 
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--trainFiles', nargs = "+", help = "List of files to train on")
+parser.add_argument('--trainZipFile', help='filename of zip file to look for trainFiles in, if not given data is assumed to be uncompressed')
 parser.add_argument('--testFiles', nargs = "+", help = "List of files to test")
+parser.add_argument('--testZipFile', help='filename of zip file to look for testFiles in, if not given data is assumed to be uncompressed')
 parser.add_argument('--agents', help='output the quality of each agent to this file (.csv)')
 parser.add_argument('-d', '--degree', default=1, type=int, help='type of polynomial to use while training')
 parser.add_argument('-o', '--output', help = 'csv file to output count and quality to')
@@ -34,13 +37,17 @@ parser.add_argument('--lpEstimator', action='store_true', help='flag should be p
         used to estimate beta values')
 parser.add_argument('--lpRepeat', action='store_true', help='flag should be present if lp repeat method is used to estimate betas')
 parser.add_argument('-q', '--cadence',  type=int)
-parser.add_argument('--incompatible_online', type=float, help='threshhold for probability an incompatible stays before it is matched')
+parser.add_argument('--incompatible_online', action='store_true', help='threshhold for probability an incompatible stays before it is matched')
 parser.add_argument('--gamma', default=.9, type=float, help='gamma value used for calculating survival')
 parser.add_argument('--graph_state', action='store_true', help='Flag should be present if lp estimator beta values is used for training')
 args = parser.parse_args()
 
 
 graph_colors = ["red", "blue", "green", "black"]
+
+def convertStringToTuple(s):
+    return tuple(int(i) for i in s.split(','))
+
 
 def COUNT(v):
     if v[1] == 0:
@@ -68,23 +75,24 @@ def getBloodTypes(demo):
     return br,bd
 
 def calcBetasLP(C, matches, available_incompat):
-    estimator = Model('estimate beta values')
-    beta = {}
-    for i in available_incompat:
-        if any(k[0] == i+C for k in matches if k[1]  in available_incompat) or any(k[1] == i for k in matches if k[0] > C \
-                and k[0]-C  in available_incompat):
-            beta[i] = estimator.addVar(vtype=GRB.CONTINUOUS, lb=0, \
-                    name='beta_'+str(i))
+    posBetas = [i for i in available_incompat if any(k[0] == i+C for k in matches if k[1] in available_incompat) or \
+            any(k[1] == i for k in matches if k[0] > C and k[0]-C in available_incompat)]
+    beta = pulp.LpVariable.dicts('beta', posBetas, lowBound = 0)
+    posBetas = set(posBetas)
+    estimator = pulp.LpProblem('Estimate Betas', pulp.LpMinimize)
+    estimator += lpSum(beta[i] for i in posBetas)
     if args.quality:
-        estimator.addConstrs((matches[t+C,i] -  beta[i] -  (beta[t] if t in beta else 0) <= 0 \
-                for t in beta for i in beta if (t+C,i) in matches),  'something...')
+        for t in posBetas:
+            for i in posBetas:
+                if (t+C,i) not in matches: continue
+                estimator += matches[t+C,i] - beta[i] - beta[t] <= 0, 'beta qual ' + str((t,i))
     else:
-        estimator.addConstrs((COUNT((t+C,i)) - beta[i] - (beta[t] if t in beta else 0) <= 0 \
-                for t in beta for i in beta if (t+C,i) in matches), 'something...')
-    obj = quicksum(beta[i] for i in beta)
-    estimator.setObjective(obj, GRB.MINIMIZE)
-    estimator.optimize()
-    newBeta =  {i:beta[i].X for i in beta}
+        for t in posBetas:
+            for i in posBetas:
+                if (t+C,i) not in matches: continue
+                estimator += COUNT((t+C,i)) - beta[i] - beta[t] <= 0, 'beta qual ' + str((t,i))
+    estimator.solve()
+    newBeta =  {i:beta[i].value() for i in posBetas}
     for i in available_incompat:
         if i not in newBeta:
             newBeta[i] = 0
@@ -96,10 +104,17 @@ graph = "digraph G {\n"
 varsUsed = args.useVars
 data = []
 if not (args.lpEstimator or args.lpRepeat):
+    if args.trainZipFile:
+        trainZipFile = ZipFile(args.trainZipFile)
     for fn in args.trainFiles:
-        with open(fn, 'r') as f:
-            data += json.load(f)
+        if args.trainZipFile:
+            data += json.loads(trainZipFile.read(fn))
+        else:
+            with open(fn, 'r') as f:
+                data += json.load(f)
     random.shuffle(data)
+    if args.trainZipFile:
+        trainZipFile.close()
 
     values = []
     labels = []
@@ -122,17 +137,23 @@ if not (args.lpEstimator or args.lpRepeat):
 
 dataIndex = 0
 agentInfo = ''
+if args.testZipFile:
+    testZipFile = ZipFile(args.testZipFile)
 for fn in args.testFiles:
-    
-    with open(fn, 'r') as f:
-        data = pickle.load(f)
+    if args.testZipFile:
+        data = json.loads(testZipFile.read(fn))
+    else:
+        with open(fn, 'r') as f:
+            data = json.load(f)
 
     I = data[0]
     C = data[1]
     T = data[2]
     matches = data[3]
+    matches = {convertStringToTuple(i):matches[i] for i in matches}
     demo = data[5]
     directed_matches = data[7]
+    directed_matches = {convertStringToTuple(i):directed_matches[i] for i in directed_matches}
     departure_times = data[8]
     available_incompat = set()
     unmatched_incompat = set()
@@ -151,7 +172,7 @@ for fn in args.testFiles:
             arriving_incompat[demo[i][20]] = set()
         arriving_incompat[demo[i][20]].add(i+1-C)
 
-    for t in range(T):
+    for t in range(T+1):
         departing_incompat = set()
         for i in available_incompat:
             if departure_times[i-1] < t:
@@ -198,15 +219,15 @@ for fn in args.testFiles:
                 if max_index == 0:
                     count += 1
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[i,0]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[i,0]) + "\t" + "C" + "\t" + str(0) + "\t" + str(demo[i][20]) + "\t" + str(i) + "\n"
+                    + "C" + "\t" + str(directed_matches[i,0]) + "\t" + "C" + "\t" + str(demo[i-1][20]) + "\t" + str(t) + "\t" + str(0) + "\n"
                 else:
                     available_incompat.remove(max_index)
                     count += 2
                     agentInfo += "C" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[i,max_index+C]) + "\t" + "I" + "\t" + str(0) + "\t" + str(demo[i][20]) + "\t" + str(i) + "\n"
+                    + "I" + "\t" + str(directed_matches[i,max_index+C]) + "\t" + "I" + '\t' + str(demo[i-1][20]) + "\t" + str(t) + "\t" + str(0) + "\n"
                     agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i,max_index+C]) + "\t" \
-                    + "C" + "\t" + str(directed_matches[max_index+C,i]) + "\t" + "C" + "\t" + str(beta[max_index]) + "\t" + str(demo[max_index+C][20]) + "\t" + \
-                    str(departure_times[max_index-1]) + "\n"
+                    + "C" + "\t" + str(directed_matches[max_index+C,i]) + "\t" + "C" + "\t" + str(demo[max_index+C-1][20]) + "\t" + \
+                    str(departure_times[max_index-1]) + "\t" + str(beta[max_index]) + "\n"
                     if args.lpRepeat:
                         beta = calcBetasLP(C, matches, available_incompat)
                         beta[0] = 0
@@ -214,64 +235,63 @@ for fn in args.testFiles:
 
 
         if args.incompatible_online:
-            probs = {i:demo[i+C-1][19]*args.gamma**num_rounds_present[i] for i in available_incompat}
-            for i in probs:
+            matching_incompat = set(i for i in available_incompat if departure_times[i-1] <= t)
+            for i in matching_incompat:
                 if i not in available_incompat: continue
-                if probs[i] < args.incompatible_online:
-                    values = {j:matches[i+C,j] - beta[j] for j in available_incompat if (i+C,j) in matches}
-                    if len(values) == 0: continue
-                    max_index = max(values, key=values.get)
-                    if values[max_index] > 0:
-                        available_incompat.remove(i)
-                        available_incompat.remove(max_index)
-                        quality += matches[i+C,max_index]
-                        count += COUNT((i+C,max_index))
-                        agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" + "I" + "\t" + str(beta[i]) + "\t" + \
-                        str(demo[i+C][20]) + "\t" + str(departure_times[i-1]) + "\n"
-                        agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" \
-                        + "I" + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" + "I" + "\t" + str(beta[max_index]) + "\t" +  \
-                        str(demo[max_index+C][20]) + "\t" + str(departure_times[max_index-1])+ "\n"
+                values = {j:matches[i+C,j] - beta[j] for j in available_incompat if (i+C,j) in matches}
+                if len(values) == 0: continue
+                max_index = max(values, key=values.get)
+                available_incompat.remove(i)
+                available_incompat.remove(max_index)
+                quality += matches[i+C,max_index]
+                count += COUNT((i+C,max_index))
+                agentInfo += "I" + str(i) + "\t" + str(t) + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" \
+                + "I" + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" + "I" + "\t" + \
+                str(demo[i+C-1][20]) + "\t" + str(departure_times[i-1]) + "\t" + str(beta[i]) + "\n"
+                agentInfo += "I" + str(max_index) + "\t" + str(t) + "\t" + str(directed_matches[i+C,max_index+C]) + "\t" \
+                + "I" + "\t" + str(directed_matches[max_index+C,i+C]) + "\t" + "I" + "\t" +  \
+                str(demo[max_index+C-1][20]) + "\t" + str(departure_times[max_index-1]) + "\t" + str(beta[max_index]) + "\n"
         if args.cadence and (t)%args.cadence==0:
             #Do incompatible matching stuff
-            model = Model('blargh')
-            matchVars = {}
-            for i in available_incompat:
-                for j in available_incompat:
-                    if (i+C,j) not in matches: continue
-                    matchVars[i+C,j] = model.addVar(vtype = GRB.BINARY,  name = "match_" + str((i+C,j)))
-            model.addConstrs((quicksum(matchVars[t,i] for i in range(1,I+1) if (t,i) in matchVars) <= 1 for t in range(C,C+I+1)), "only match with one other pair")
-            model.addConstrs((quicksum(matchVars[t,i] for t in range(C,C+I+1) if (t,i) in matchVars) + quicksum(matchVars[i+C,j] for j in range(1, I+1) \
-                               if (i+C,j) in matchVars) <= 1 for i in range(1,I+1)), "symmetry")
+            model = pulp.LpProblem('incompatible matching', pulp.LpMaximize)
+            matchVars = [(i+C,j) for i in available_incompat for j in available_incompat if (i+C,j) in matches]
+            x = pulp.LpVariable.dicts('match', matchVars, lowBound = 0, upBound = 1, cat = pulp.LpInteger)
+            matchVars = set(matchVars)
             if args.quality:
-                obj = quicksum(matchVars[v]*matches[v] for v in matchVars)
+                model += lpSum(x[v]*matches[v] for v in matchVars)
             else:
-                obj = quicksum(matchVars[v]*COUNT(v) for v in matchVars)
-            model.setObjective(obj, GRB.MAXIMIZE) 
-            model.optimize()
-            count += sum(COUNT(v)*matchVars[v].X for v in matchVars)
-            quality += sum(matches[v]*matchVars[v].X for v in matchVars)
+                model += lpSum(x[v]*COUNT(v) for v in matchVars)
+            for t in available_incompat:
+                model += lpSum(x[t+C,i] for i in available_incompat if (t+C,i) in matchVars) <= 1, 'only match with 1 '+str(t)
+            for i in available_incompat:
+                model += lpSum(x[t+C,i] for t in available_incompat if (t+C,i) in matchVars) + lpSum(x[i+C,j] for j in available_incompat \
+                        if (i+C,j) in matchVars) <= 1, 'symetry '+str(i)
+            model.solve()
+            count += sum(COUNT(v)*x[v].value() for v in matchVars)
+            quality += sum(matches[v]*x[v].value() for v in matchVars)
 
             for v in matchVars:
-                if round(matchVars[v].X) != 0:
+                if round(x[v].value()) != 0:
                     available_incompat.remove(v[0]-C)
                     available_incompat.remove(v[1])
                     #Agent Info Stuff
                     agentInfo += "I" + str(v[0]-C) + "\t" + str(t) + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + str(beta[v[0]-C]) + "\t" + \
-                    str(demo[v[0]+C][20]) + "\t" + str(departure_times[v[0]-1]) + "\n"
+                    + "I" + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" + "I" + "\t" + \
+                    str(demo[v[0]-1][20]) + "\t" + str(departure_times[v[0]-C-1]) + "\t" + str(beta[v[0]-C]) + "\n"
                     agentInfo += "I" + str(v[1]) + "\t" + str(t) + "\t" + str(directed_matches[v[0],v[1]+C]) + "\t" \
-                    + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\t" + str(beta[v[1]]) +  "\t" \
-                    + str(demo[v[1]+C][20]) + "\t" + str(departure_times[v[1]-1]) + "\n"
+                    + "I" + "\t" + str(directed_matches[v[1]+C,v[0]]) + "\t" + "I" + "\t" \
+                    + str(demo[v[1]+C-1][20]) + "\t" + str(departure_times[v[1]-1]) + "\t" + str(beta[v[1]]) + "\n"
     unmatched_incompat = unmatched_incompat.union(set((i,lastBeta[i]) for i in available_incompat))
     for a in unmatched_incompat:
         i = a[0]
         b = a[1]
         agentInfo += "I" + str(i) + "\t" + str(T) + "\t" + str(0) + "\t" \
-        + "N" + "\t" + str(0) + "\t" + "N" + "\t" + str(b) + "\t" + \
-        + str(demo[i+C][20]) + "\t" + str(departure_times[i-1]) + "\n"
+        + "N" + "\t" + str(0) + "\t" + "N" + "\t" + \
+        str(demo[i+C-1][20]) + "\t" + str(departure_times[i-1]) + "\t" + str(b) + "\n"
 
     results += str(count) + '\t' + str(quality) + '\n'
+if args.testZipFile:
+    testZipFile.close()
 
 
 

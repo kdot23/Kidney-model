@@ -14,16 +14,19 @@ from DistributionGenerator import *
 import functions
 import util
 import pickle
+import json
 import random
 import numpy as np
+import scipy.io as sio
 
 parser = argparse.ArgumentParser(description="Generates Donor recipient pairs and a quality pool for optimization")
 parser.add_argument('-K', '--num_incompatible', default=100, dest='K', type = int)
 parser.add_argument('-T', '--time', default=100, dest='T', type = int)
 parser.add_argument('-o', '--output', default='data.dat')
-parser.add_argument('--l1', default=1., type=float)
-parser.add_argument('--l2', default=1., type=float)
-parser.add_argument('--gamma', default=.9,type=float)
+parser.add_argument('--l1', default=1., type=float, help = "Incompatible arrival rate")
+parser.add_argument('--l2', default=1., type=float, help = "Compatible arrival rate")
+parser.add_argument('-L', '--mean_life', type=int, default=75, help='Mean lifespan of an incompatible pair')
+parser.add_argument('-S', '--stdev_life', type=int, default=5, help='Stdev of lifespans of incompatible pairs')
 
 args = parser.parse_args()
 
@@ -33,6 +36,29 @@ filename = args.output
 pool = BJCSensitivityPool(0, K)
 gen = DistributionGenerator()
 
+compatPool = []
+incompatPool = []
+max_compats = (T+5)*args.l2
+max_incompats = (T+5)*args.l1
+
+def convert2TupleToString(v):
+    return str(v[0])+','+str(v[1])
+def convert3TupleToString(v):
+    return str(v[0])+','+str(v[1])+','+str(v[2])
+def genAgents(n):
+    n = int(n)
+    for _ in range(n):
+        agent = BJCPair()
+        if agent.compatible:
+            if len(compatPool) < max_compats:
+                compatPool.append(agent)
+        else:
+            if len(incompatPool) < max_incompats:
+                incompatPool.append(agent)
+
+
+
+genAgents(T*args.l2+T*args.l1)
 incompatibles = pool.incompatiblePairs
 compatibles = []
 departureTimesIncompat = []
@@ -40,21 +66,23 @@ departureTimesIncompat = []
 for t in range(1,T+1):
     incompatArrivals = np.random.poisson(args.l1)
     for _ in range(incompatArrivals):
-        pair = BJCPair(arrival_time=t)
-        while pair.compatible:
-            pair = BJCPair(arrival_time=t)
-        incompatibles.append(pair)
+        while len(incompatPool) == 0:
+            genAgents(1+args.l1*(T-t))
+        agent = incompatPool.pop()
+        agent.arrival_time = t
+        incompatibles.append(agent)
     compatArrivals = np.random.poisson(args.l2)
     for _ in range(compatArrivals):
-        pair = BJCPair(arrival_time=t)
-        while not pair.compatible:
-            pair = BJCPair(arrival_time=t)
-        compatibles.append(pair)
+        while len(compatPool) == 0:
+            genAgents(1+args.l2*(T-t))
+        agent = compatPool.pop()
+        agent.arrival_time = t
+        agent.life_span = 0
+        compatibles.append(agent)
 
 for i in range(len(incompatibles)):
-    time = 0
-    while random.random() < (args.gamma**time)*incompatibles[i].patient_health:
-        time += 1
+    time = round(max(0,np.random.normal(loc=args.mean_life, scale=args.stdev_life)))
+    incompatibles[i].life_span = time
     departureTimesIncompat.append(incompatibles[i].arrival_time+time)
 
 
@@ -65,7 +93,7 @@ positiveCrossMatches = {}
 for i in range(len(compatibles)+len(incompatibles)):
     for j in range(len(compatibles)+len(incompatibles)):
         if j < C and i < C: continue
-        misMatches[i+1,j+1] = (gen.gen_donor_rec_HLA_B_mis(0), gen.gen_donor_rec_HLA_DR_mis(0))
+        misMatches[i+1,j+1] = (gen.gen_donor_rec_HLA_B_mis(0)[0], gen.gen_donor_rec_HLA_DR_mis(0)[0])
 
 
 for t in compatibles:
@@ -89,7 +117,7 @@ def generateDemo(pair):
          int(pair.bloodTypePatient == 3 ), int(pair.bloodTypeDonor == 0 ), int(pair.bloodTypeDonor == 1 ), \
          int(pair.bloodTypeDonor == 2 ), int(pair.bloodTypeDonor == 3 ), pair.donor_afam, pair.donor_age, \
          pair.donor_sex[0], pair.donor_cig_use[0], pair.rec_sex[0], pair.donor_weight, pair.rec_weight, \
-         pair.donor_bmi, pair.donor_egfr, pair.donor_sbp, pair.pr_PraIncompatiblity, pair.patient_health, pair.arrival_time)
+         pair.donor_bmi, pair.donor_egfr, pair.donor_sbp, pair.pr_PraIncompatiblity, pair.life_span, pair.arrival_time)
 
 def compatible(donor, recipient):
     return functions.are_blood_compatible(donor.bloodTypeDonor, recipient.bloodTypePatient) \
@@ -170,6 +198,10 @@ for i in range(len(incompatibles)):
                 lkdpi_2 = getLKDPI(incompatibles[j], incompatibles[k], misMatches[j+C+1,k+C+1][0], misMatches[j+C+1,k+C+1][1])
                 lkdpi_3 = getLKDPI(incompatibles[k], incompatibles[i], misMatches[k+C+1,i+C+1][0], misMatches[k+C+1,i+C+1][1])
                 matches3C[i+C+1,j+1,k+1] = util.calculate_survival(lkdpi_1) + util.calculate_survival(lkdpi_2) + util.calculate_survival(lkdpi_3)
+matches2C = {convert2TupleToString(i):matches2C[i] for i in matches2C}
+matches3C = {convert3TupleToString(i):matches3C[i] for i in matches3C}
+misMatches = {convert2TupleToString(i):misMatches[i] for i in misMatches}
+matchesDirected = {convert2TupleToString(i):matchesDirected[i] for i in matchesDirected}
 
-with open(filename, 'wb') as f:
-    pickle.dump((I, C, T, matches2C, matches3C, demo, misMatches, matchesDirected,departureTimesIncompat), f)
+with open(args.output, 'w') as f:
+    json.dump((I, C, T, matches2C, matches3C, demo, misMatches, matchesDirected,departureTimesIncompat),f)
