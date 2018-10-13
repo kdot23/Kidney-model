@@ -22,8 +22,8 @@ graph_colors = ["red", "blue", "green", "black"]
 
 def COUNT(v):
     if v[1] == 0:
-        return 2
-    return 1
+        return 1
+    return 2
 
 def getBloodTypes(demo):
     bd,br=0,0
