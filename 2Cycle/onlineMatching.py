@@ -254,8 +254,9 @@ for fn in args.testFiles:
             for t in range(1,T+1):
                 for i in range(1, K+1):
                     if compatible(pool.compatiblePairs[t-1], i+T) and compatible(i+T, pool.compatiblePairs[t-1]):
-                        proj_matches[t,i] = util.calculate_survival(getLKDPI(pool.compatiblePairs[t-1], i, misMatches[t,i+T][0], misMatches[t,i+T][1])) \
-                                + util.calculate_survival(getLKDPI(i, pool.compatiblePairs[t-1], misMatches[i+T,t][0], misMatches[i+T,t][1]))
+                        proj_matches[t,i] = util.calculate_survival(getLKDPI(pool.compatiblePairs[t-1], i+T, misMatches[t,i+T][0], misMatches[t,i+T][1])) \
+                                + util.calculate_survival(getLKDPI(i+T, pool.compatiblePairs[t-1], misMatches[i+T,t][0], misMatches[i+T,t][1]))
+                proj_matches[t,0] = util.calculate_survival(pool.compatiblePairs[t-1].LKDPI)
             betaProj = calcBetasProj(T, K, proj_matches)
             betas.append(betaProj)
         beta = {i:sum(b[i] for b in betas)/len(betas) for i in range(K+1)}
