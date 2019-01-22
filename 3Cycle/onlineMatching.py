@@ -38,7 +38,7 @@ parser.add_argument('--lpEstimator', action='store_true', help='should be presen
         estimate betas')
 parser.add_argument('--lpRepeat', action='store_true', help='should be present if lp repeat method is used to estimate betas')
 parser.add_argument('--graph_state', action='store_true', help='flag should be present if lpEstimator values are going to be used for training')
-parser.add_argument('--fwd_proj', nargs='?', const=10, help='flag should be present if the simulator uses forward projections to estimate beta values')
+parser.add_argument('--fwd_proj', nargs='?', const=10, type=int, help='flag should be present if the simulator uses forward projections to estimate beta values')
 args = parser.parse_args()
 
 
@@ -83,11 +83,11 @@ def calcBetasProj(T, K, matches):
             beta[i] = estimator.addVar(vtype = GRB.CONTINUOUS, lb = 0, name = 'beta+'+str(i))
     beta[0] = 0
     if args.quality:
-        estimator.addConstrs((matches[t,i,j] - (alpha[t] if t in alpha else 0) -  beta[i] - beta[j] -  (beta[t-T] if t-T in beta else 0) <= 0 \
-                for t in range(1,T+K+1) if t-T in beta or t in alpha for i in beta for j in beta if (t,i,j) in matches),  'something...')
+        estimator.addConstrs((matches[t,i,j] - (alpha[t] if t in alpha and t <= T else 0) -  beta[i] - beta[j] -  (beta[t-T] if t-T in beta and t > T else 0) <= 0 \
+                for t in range(1,T+K+1) if (t-T in beta and t > T) or (t in alpha and t <= T) for i in beta for j in beta if (t,i,j) in matches),  'something...')
     else:
-        estimator.addConstrs((COUNT((t,i,j)) - (alpha[t] if t in alpha else 0) - beta[i] - beta[j] - (beta[t-T] if t-T in beta else 0) <= 0 \
-                for t in range(1, T+K+1) if t-T in beta or t in alpha for i in beta for j in beta if (t,i,j) in matches), 'something...')
+        estimator.addConstrs((COUNT((t,i,j)) - (alpha[t] if t in alpha and t <= T else 0) - beta[i] - beta[j] - (beta[t-T] if t-T in beta and t > T else 0) <= 0 \
+                for t in range(1, T+K+1) if (t-T in beta and t > T) or (t in alpha and t <= T) for i in beta for j in beta if (t,i,j) in matches), 'something...')
     obj = quicksum(beta[i] for i in beta) + quicksum(alpha[t] for t in alpha)
     estimator.setObjective(obj, GRB.MINIMIZE)
     estimator.optimize()
