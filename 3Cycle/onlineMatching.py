@@ -39,8 +39,8 @@ parser.add_argument('--lpEstimator', action='store_true', help='should be presen
 parser.add_argument('--lpRepeat', action='store_true', help='should be present if lp repeat method is used to estimate betas')
 parser.add_argument('--graph_state', action='store_true', help='flag should be present if lpEstimator values are going to be used for training')
 parser.add_argument('--fwd_proj', nargs='?', const=10, type=int, help='flag should be present if the simulator uses forward projections to estimate beta values')
+parser.add_argument('--fwd_proj_repeat', action='store_true', help='flag should be present if the simulator uses forward projections to estimate beta values and recalculates at every time step')
 args = parser.parse_args()
-
 
 graph_colors = ["red", "blue", "green", "black"]
 
@@ -71,7 +71,7 @@ def COUNT(v):
         return 2
     return 3
 
-def calcBetasProj(T, K, matches):
+def calcBetasProj(T, K, matches, used_incompat):
     estimator = Model('estimate beta values')
     alpha = {}
     beta = {}
@@ -79,6 +79,7 @@ def calcBetasProj(T, K, matches):
         if any(v[0] == i for v in matches):
             alpha[i] = estimator.addVar(vtype = GRB.CONTINUOUS, lb = 0, name = 'alpha_'+str(i))
     for i in range(1, K+1):
+        if i in used_incompat: continue
         if any(v[0] == i+T or v[1] == i or v[2] == i for v in matches):
             beta[i] = estimator.addVar(vtype = GRB.CONTINUOUS, lb = 0, name = 'beta+'+str(i))
     beta[0] = 0
@@ -91,13 +92,105 @@ def calcBetasProj(T, K, matches):
     obj = quicksum(beta[i] for i in beta) + quicksum(alpha[t] for t in alpha)
     estimator.setObjective(obj, GRB.MINIMIZE)
     estimator.optimize()
-    newBeta =  {i:(beta[i].X if i in beta else 0) for i in range(1,K+1)}
-    for i in range(0, K+1):
-        if i in used_incompat:
-            continue
-        if i not in newBeta:
-            newBeta[i] = 0
+    newBeta =  {i:(beta[i].X if i in beta else 0) for i in range(1,K+1) if i not in used_incompat}
+    newBeta[0] = 0
     return newBeta
+
+
+def projPops(T, K, matches, demo, used_incompat):
+    betas = []
+    gen = DistributionGenerator()
+    Imatches = {v:matches[v] for v in matches if v[0] > T}
+    def getBloodTypeDonor(i):
+        if demo[i][0]: return 0
+        elif demo[i][1]: return 1
+        elif demo[i][2]: return 2
+        else: return 3
+    def getBloodTypeRecip(i):
+        if demo[i][4]: return 0
+        elif demo[i][5]: return 1
+        elif demo[i][6]: return 2
+        else: return 3
+    for _ in range(args.fwd_proj):
+        proj_matches = dict(Imatches)
+        pool = BJCSensitivityPool(T, 0)
+        misMatches = {}
+        positiveCrossMatches = {}
+        for i in range(T+K):
+            for j in range(T+K):
+                if j < T and i < T: continue
+                if j >= T and i >= T: continue
+                misMatches[i+1, j+1] = (gen.gen_donor_rec_HLA_B_mis(0), gen.gen_donor_rec_HLA_DR_mis(0))
+        for t in pool.compatiblePairs:
+            for i in range(T+1,T+K+1):
+                positiveCrossMatches[t, i] = t.saidman.isPositiveCrossmatch(demo[i-1][18])
+                positiveCrossMatches[i, t] = t.saidman.isPositiveCrossmatch(t.pr_PraIncompatiblity)
+        Cset = set(pool.compatiblePairs)
+        def compatible(donor, recipient):
+            if donor in Cset:
+                return functions.are_blood_compatible(donor.bloodTypeDonor, getBloodTypeRecip(recipient-1)) \
+                          and (not positiveCrossMatches[donor, recipient])
+            elif recipient in Cset:
+                return functions.are_blood_compatible(getBloodTypeDonor(donor-1), recipient.bloodTypePatient) \
+                        and (not positiveCrossMatches[donor, recipient])
+            else:
+                return (donor, recipient) in directed_matches
+        def getLKDPI(donor, recipient, HLA_B_mis, HLA_DR_mis ):
+            if donor in Cset:
+                bloodTypeDonor = donor.bloodTypeDonor
+                donor_weight = donor.donor_weight
+                donor_age = donor.donor_age
+                donor_afam = donor.donor_afam
+                donor_bmi = donor.donor_bmi
+                donor_cig_use = donor.donor_cig_use
+                donor_sex = donor.donor_sex
+                donor_sbp = donor.donor_sbp
+                donor_egfr = donor.donor_egfr
+            else:
+                bloodTypeDonor = getBloodTypeDonor(donor-1)
+                donor_weight = demo[donor-1][13]
+                donor_age = demo[donor-1][9]
+                donor_afam = demo[donor-1][8]
+                donor_bmi = demo[donor-1][15]
+                donor_cig_use = demo[donor-1][11]
+                donor_sex = demo[donor-1][10]
+                donor_sbp = demo[donor-1][17]
+                donor_egfr = demo[donor-1][16]
+            if recipient in Cset:
+                bloodTypePatient = recipient.bloodTypePatient
+                rec_weight = recipient.rec_weight
+                rec_sex = recipient.rec_sex
+            else:
+                bloodTypePatient = getBloodTypeRecip(recipient-1)
+                rec_weight = demo[recipient-1][14]
+                rec_sex = demo[recipient-1][12]
+            donor_rec_abo_comp = functions.are_blood_compatible(bloodTypeDonor, bloodTypePatient)
+            weight_ratio = util.calculate_weight_ratio(donor_weight, rec_weight)
+            return util.calculate_lkdpi(donor_age, donor_afam, donor_bmi, donor_cig_use, \
+                                              donor_sex, rec_sex, donor_sbp, donor_rec_abo_comp, \
+                                              0, donor_egfr, HLA_B_mis, HLA_DR_mis, weight_ratio)
+        for t in range(1,T+1):
+            for i in range(1, K+1):
+                for j in range(1, K+1):
+                    if i == j: continue
+                    if compatible(pool.compatiblePairs[t-1], i+T) \
+                            and compatible(i+T, j+T) and \
+                            compatible(j+T, pool.compatiblePairs[t-1]):
+                        proj_matches[t,i,j] = \
+                                        util.calculate_survival(getLKDPI(pool.compatiblePairs[t-1], i+T, misMatches[t,i+T][0], misMatches[t,i+T][1])) + \
+                                        directed_matches[i+T, j+T] + \
+                                        util.calculate_survival(getLKDPI(j+T, pool.compatiblePairs[t-1], misMatches[j+T,t][0], misMatches[j+T,t][1]))
+                if compatible(pool.compatiblePairs[t-1], i+T) \
+                        and compatible(i+T, pool.compatiblePairs[t-1]):
+                    proj_matches[t,i,0] = \
+                                    util.calculate_survival(getLKDPI(pool.compatiblePairs[t-1], i+T, misMatches[t, i+T][0], misMatches[t, i+T][1])) + \
+                                    util.calculate_survival(getLKDPI(i+T, pool.compatiblePairs[t-1], misMatches[i+T,t][0], misMatches[i+T,t][1]))
+            proj_matches[t,0,0] = util.calculate_survival(pool.compatiblePairs[t-1].LKDPI)
+        betaProj = calcBetasProj(T, K, proj_matches, used_incompat)
+        betas.append(betaProj)
+    beta = {i:sum(b[i] for b in betas)/len(betas) for i in range(K+1) if i not in used_incompat}
+    return beta
+
 
 def calcBetaLP(T, K, matches, used_incompat):
     estimator = Model("estimate beta vals")
@@ -198,12 +291,12 @@ for fn in args.testFiles:
         for _ in range(args.fwd_proj):
             proj_matches = dict(Imatches)
             pool = BJCSensitivityPool(T, 0)
-            Tbeta = []
             misMatches = {}
             positiveCrossMatches = {}
             for i in range(T+K):
                 for j in range(T+K):
                     if j < T and i < T: continue
+                    if j >= T and i >= T: continue
                     misMatches[i+1, j+1] = (gen.gen_donor_rec_HLA_B_mis(0), gen.gen_donor_rec_HLA_DR_mis(0))
             for t in pool.compatiblePairs:
                 for i in range(T+1,T+K+1):
@@ -256,20 +349,21 @@ for fn in args.testFiles:
             for t in range(1,T+1):
                 for i in range(1, K+1):
                     for j in range(1, K+1):
+                        if i == j: continue
                         if compatible(pool.compatiblePairs[t-1], i+T) \
                                 and compatible(i+T, j+T) and \
                                 compatible(j+T, pool.compatiblePairs[t-1]):
-                                    proj_matches[t,i,j] = \
+                            proj_matches[t,i,j] = \
                                             util.calculate_survival(getLKDPI(pool.compatiblePairs[t-1], i+T, misMatches[t,i+T][0], misMatches[t,i+T][1])) + \
                                             directed_matches[i+T, j+T] + \
                                             util.calculate_survival(getLKDPI(j+T, pool.compatiblePairs[t-1], misMatches[j+T,t][0], misMatches[j+T,t][1]))
                     if compatible(pool.compatiblePairs[t-1], i+T) \
                             and compatible(i+T, pool.compatiblePairs[t-1]):
-                                proj_matches[t,i,0] = \
+                        proj_matches[t,i,0] = \
                                         util.calculate_survival(getLKDPI(pool.compatiblePairs[t-1], i+T, misMatches[t, i+T][0], misMatches[t, i+T][1])) + \
                                         util.calculate_survival(getLKDPI(i+T, pool.compatiblePairs[t-1], misMatches[i+T,t][0], misMatches[i+T,t][1]))
                 proj_matches[t,0,0] = util.calculate_survival(pool.compatiblePairs[t-1].LKDPI)
-            betaProj = calcBetasProj(T, K, proj_matches)
+            betaProj = calcBetasProj(T, K, proj_matches, set())
             betas.append(betaProj)
         beta = {i:sum(b[i] for b in betas)/len(betas) for i in range(K+1)}
     else:
@@ -315,6 +409,9 @@ for fn in args.testFiles:
         if args.lpRepeat and not args.fwd_proj and (max_index[2] != 0 or max_index[1] != 0):
             beta = calcBetaLP(T, K, matches, used_incompat)
             beta[0] = 0
+        elif args.fwd_proj_repeat and args.fwd_proj:
+            beta = projPops(T, K, matches, demo, used_incompat)
+            beta[0] = 0
             
 
     """
@@ -343,7 +440,7 @@ for fn in args.testFiles:
     model = Model('Online Matching')
     matchVars = {}
     for t in range(T+1,T+K+1):
-        if t-T not in beta: continue
+        if t-T not in beta or t-T in used_incompat: continue
         for i in beta:
             for j in beta:
                 if (t,i,j) in matches:
