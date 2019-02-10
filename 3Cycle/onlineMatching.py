@@ -97,7 +97,7 @@ def calcBetasProj(T, K, matches, used_incompat):
     return newBeta
 
 
-def projPops(T, K, matches, demo, used_incompat):
+def projPops(T, K, matches, demo, used_incompat, numMatched):
     betas = []
     gen = DistributionGenerator()
     Imatches = {v:matches[v] for v in matches if v[0] > T}
@@ -113,7 +113,7 @@ def projPops(T, K, matches, demo, used_incompat):
         else: return 3
     for _ in range(args.fwd_proj):
         proj_matches = dict(Imatches)
-        pool = BJCSensitivityPool(T, 0)
+        pool = BJCSensitivityPool(T-numMatched, 0)
         misMatches = {}
         positiveCrossMatches = {}
         for i in range(T+K):
@@ -377,12 +377,14 @@ for fn in args.testFiles:
     
     quality = 0
     count = 0
+    numMatched = 0
     for t in range(1,T+1):
         values = {(t, i, j):.1*random.random()+ matches[t,i,j] - beta[i] - beta[j] \
                   for i in beta for j in beta if (t,i,j) in matches}
         max_index = max(values, key=values.get)
         count += COUNT(max_index)
         quality += matches[max_index]
+        numMatched += 1
         
         if max_index[1] == 0:
             agentInfo += "C" + str(t) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],0]) + "\t" \
@@ -410,7 +412,7 @@ for fn in args.testFiles:
             beta = calcBetaLP(T, K, matches, used_incompat)
             beta[0] = 0
         elif args.fwd_proj_repeat and args.fwd_proj:
-            beta = projPops(T, K, matches, demo, used_incompat)
+            beta = projPops(T, K, matches, demo, used_incompat, numMatched)
             beta[0] = 0
             
 
