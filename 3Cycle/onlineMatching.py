@@ -97,7 +97,7 @@ def calcBetasProj(T, K, matches, used_incompat):
     return newBeta
 
 
-def projPops(T, K, matches, demo, used_incompat, numMatched):
+def projPops(T, K, matches, demo, used_incompat):
     betas = []
     gen = DistributionGenerator()
     Imatches = {v:matches[v] for v in matches if v[0] > T}
@@ -113,7 +113,7 @@ def projPops(T, K, matches, demo, used_incompat, numMatched):
         else: return 3
     for _ in range(args.fwd_proj):
         proj_matches = dict(Imatches)
-        pool = BJCSensitivityPool(T-numMatched, 0)
+        pool = BJCSensitivityPool(T, 0)
         misMatches = {}
         positiveCrossMatches = {}
         for i in range(T+K):
@@ -412,7 +412,7 @@ for fn in args.testFiles:
             beta = calcBetaLP(T, K, matches, used_incompat)
             beta[0] = 0
         elif args.fwd_proj_repeat and args.fwd_proj:
-            beta = projPops(T, K, matches, demo, used_incompat, numMatched)
+            beta = projPops(T-numMatched, K, matches, demo, used_incompat)
             beta[0] = 0
             
 
