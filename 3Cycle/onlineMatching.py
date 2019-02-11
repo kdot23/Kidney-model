@@ -71,11 +71,11 @@ def COUNT(v):
         return 2
     return 3
 
-def calcBetasProj(T, K, matches, used_incompat):
+def calcBetasProj(T, K, matches, used_incompat, numMatched):
     estimator = Model('estimate beta values')
     alpha = {}
     beta = {}
-    for i in range(1, T+1):
+    for i in range(1, T+1-numMatched):
         if any(v[0] == i for v in matches):
             alpha[i] = estimator.addVar(vtype = GRB.CONTINUOUS, lb = 0, name = 'alpha_'+str(i))
     for i in range(1, K+1):
@@ -97,7 +97,7 @@ def calcBetasProj(T, K, matches, used_incompat):
     return newBeta
 
 
-def projPops(T, K, matches, demo, used_incompat):
+def projPops(T, K, matches, demo, used_incompat, numMatched):
     betas = []
     gen = DistributionGenerator()
     Imatches = {v:matches[v] for v in matches if v[0] > T}
@@ -113,7 +113,7 @@ def projPops(T, K, matches, demo, used_incompat):
         else: return 3
     for _ in range(args.fwd_proj):
         proj_matches = dict(Imatches)
-        pool = BJCSensitivityPool(T, 0)
+        pool = BJCSensitivityPool(T-numMatched, 0)
         misMatches = {}
         positiveCrossMatches = {}
         for i in range(T+K):
@@ -169,7 +169,7 @@ def projPops(T, K, matches, demo, used_incompat):
             return util.calculate_lkdpi(donor_age, donor_afam, donor_bmi, donor_cig_use, \
                                               donor_sex, rec_sex, donor_sbp, donor_rec_abo_comp, \
                                               0, donor_egfr, HLA_B_mis, HLA_DR_mis, weight_ratio)
-        for t in range(1,T+1):
+        for t in range(1,T+1-numMatched):
             for i in range(1, K+1):
                 for j in range(1, K+1):
                     if i == j: continue
@@ -186,7 +186,7 @@ def projPops(T, K, matches, demo, used_incompat):
                                     util.calculate_survival(getLKDPI(pool.compatiblePairs[t-1], i+T, misMatches[t, i+T][0], misMatches[t, i+T][1])) + \
                                     util.calculate_survival(getLKDPI(i+T, pool.compatiblePairs[t-1], misMatches[i+T,t][0], misMatches[i+T,t][1]))
             proj_matches[t,0,0] = util.calculate_survival(pool.compatiblePairs[t-1].LKDPI)
-        betaProj = calcBetasProj(T, K, proj_matches, used_incompat)
+        betaProj = calcBetasProj(T, K, proj_matches, used_incompat, numMatched)
         betas.append(betaProj)
     beta = {i:sum(b[i] for b in betas)/len(betas) for i in range(K+1) if i not in used_incompat}
     return beta
@@ -363,7 +363,7 @@ for fn in args.testFiles:
                                         util.calculate_survival(getLKDPI(pool.compatiblePairs[t-1], i+T, misMatches[t, i+T][0], misMatches[t, i+T][1])) + \
                                         util.calculate_survival(getLKDPI(i+T, pool.compatiblePairs[t-1], misMatches[i+T,t][0], misMatches[i+T,t][1]))
                 proj_matches[t,0,0] = util.calculate_survival(pool.compatiblePairs[t-1].LKDPI)
-            betaProj = calcBetasProj(T, K, proj_matches, set())
+            betaProj = calcBetasProj(T, K, proj_matches, set(), 0)
             betas.append(betaProj)
         beta = {i:sum(b[i] for b in betas)/len(betas) for i in range(K+1)}
     else:
@@ -377,12 +377,14 @@ for fn in args.testFiles:
     
     quality = 0
     count = 0
+    numMatched = 0
     for t in range(1,T+1):
         values = {(t, i, j):.1*random.random()+ matches[t,i,j] - beta[i] - beta[j] \
                   for i in beta for j in beta if (t,i,j) in matches}
         max_index = max(values, key=values.get)
         count += COUNT(max_index)
         quality += matches[max_index]
+        numMatched += 1
         
         if max_index[1] == 0:
             agentInfo += "C" + str(t) + "\t" + str(t) + "\t" + str(directed_matches[max_index[0],0]) + "\t" \
@@ -410,7 +412,7 @@ for fn in args.testFiles:
             beta = calcBetaLP(T, K, matches, used_incompat)
             beta[0] = 0
         elif args.fwd_proj_repeat and args.fwd_proj:
-            beta = projPops(T, K, matches, demo, used_incompat)
+            beta = projPops(T-numMatched, K, matches, demo, used_incompat, numMatched)
             beta[0] = 0
             
 
