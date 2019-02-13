@@ -32,5 +32,5 @@ props = cbind(c(propG_O_1, propG_O_2, propG_O_3),
 
 
 par(mar=c(10,5,2,2), xpd=TRUE, cex.lab=1, cex.main=.8)
-barplot(props, col=c('ivory4', 'ivory3', 'ivory1'), names=c('Fancy Greedy O', 'fwd rep ODASSE O', 'Fancy Greedy NO', 'fwd rep ODASSE NO'), ylab='Proportion of Matches', main='Proportions of Matches by Algorithm and Recipient PRA')
+barplot(props, col=c('ivory4', 'ivory3', 'ivory1'), names=c('Fancy Greedy H', 'fwd rep ODASSE H', 'Fancy Greedy L', 'fwd rep ODASSE L'), ylab='Proportion of Matches', main='Proportions of Matches by Algorithm and Recipient PRA')
 legend('bottom',legend=c('Online', 'End', 'Unmatched'), fill=c('ivory4', 'ivory3', 'ivory2'), inset=c(-.4,-.8), ncol=3)
